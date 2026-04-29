@@ -1,0 +1,146 @@
+[
+  {
+    "name_tc": "東區尤德夫人那打素醫院",
+    "name_en": "Pamela Youde Nethersole Eastern Hospital",
+    "lat": 22.26918,
+    "lon": 114.23643,
+    "code": "PYN",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=PYN"
+  },
+  {
+    "name_tc": "律敦治醫院",
+    "name_en": "Ruttonjee Hospital",
+    "lat": 22.275909,
+    "lon": 114.17529,
+    "code": "RH",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=RH"
+  },
+  {
+    "name_tc": "長洲醫院",
+    "name_en": "St. John Hospital",
+    "lat": 22.208059,
+    "lon": 114.03151,
+    "code": "SJH",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=SJH"
+  },
+  {
+    "name_tc": "瑪麗醫院",
+    "name_en": "Queen Mary Hospital",
+    "lat": 22.2704,
+    "lon": 114.13117,
+    "code": "QMH",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=QMH"
+  },
+  {
+    "name_tc": "廣華醫院",
+    "name_en": "Kwong Wah Hospital",
+    "lat": 22.31429,
+    "lon": 114.1721,
+    "code": "KWH",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=KWH"
+  },
+  {
+    "name_tc": "伊利沙伯醫院",
+    "name_en": "Queen Elizabeth Hospital",
+    "lat": 22.30886,
+    "lon": 114.17519,
+    "code": "QEH",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=QEH"
+  },
+  {
+    "name_tc": "將軍澳醫院",
+    "name_en": "Tseung Kwan O Hospital",
+    "lat": 22.317964,
+    "lon": 114.27021,
+    "code": "TKO",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=TKO"
+  },
+  {
+    "name_tc": "基督教聯合醫院",
+    "name_en": "United Christian Hospital",
+    "lat": 22.322291,
+    "lon": 114.2279,
+    "code": "UCH",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=UCH"
+  },
+  {
+    "name_tc": "明愛醫院",
+    "name_en": "Caritas Medical Centre",
+    "lat": 22.340629,
+    "lon": 114.15231,
+    "code": "CMC",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=CMC"
+  },
+  {
+    "name_tc": "北大嶼山醫院",
+    "name_en": "North Lantau Hospital",
+    "lat": 22.282571,
+    "lon": 113.93914,
+    "code": "NLT",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=NLT"
+  },
+  {
+    "name_tc": "瑪嘉烈醫院",
+    "name_en": "Princess Margaret Hospital",
+    "lat": 22.340057,
+    "lon": 114.1347,
+    "code": "PMH",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=PMH"
+  },
+  {
+    "name_tc": "仁濟醫院",
+    "name_en": "Yan Chai Hospital",
+    "lat": 22.369548,
+    "lon": 114.11956,
+    "code": "YCH",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=YCH"
+  },
+  {
+    "name_tc": "雅麗氏何妙齡那打素醫院",
+    "name_en": "Alice Ho Miu Ling Nethersole Hospital",
+    "lat": 22.458696,
+    "lon": 114.17479,
+    "code": "AHN",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=AHN"
+  },
+  {
+    "name_tc": "北區醫院",
+    "name_en": "North District Hospital",
+    "lat": 22.496832,
+    "lon": 114.12456,
+    "code": "NDH",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=NDH"
+  },
+  {
+    "name_tc": "威爾斯親王醫院",
+    "name_en": "Prince of Wales Hospital",
+    "lat": 22.379939,
+    "lon": 114.20129,
+    "code": "PWH",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=PWH"
+  },
+  {
+    "name_tc": "博愛醫院",
+    "name_en": "Pok Oi Hospital",
+    "lat": 22.44523,
+    "lon": 114.04159,
+    "code": "POH",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=POH"
+  },
+  {
+    "name_tc": "天水圍醫院",
+    "name_en": "Tin Shui Wai Hospital",
+    "lat": 22.458704,
+    "lon": 113.99585,
+    "code": "TSH",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=TSH"
+  },
+  {
+    "name_tc": "屯門醫院",
+    "name_en": "Tuen Mun Hospital",
+    "lat": 22.40708,
+    "lon": 113.97621,
+    "code": "TMH",
+    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=TMH"
+  }
+]
