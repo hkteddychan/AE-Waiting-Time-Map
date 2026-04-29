@@ -298,17 +298,20 @@
             <span class="hosp-row-badge" style="background:${badgeColor}">${badgeText}</span>
           </div>
           <div class="hosp-row-times">
-            <span class="hosp-time-chip">T1 <span>${t1}</span></span>
-            <span class="hosp-time-chip">T2 <span>${t2}</span></span>
-            <span class="hosp-time-chip">T3 <span>${t3p50}</span></span>
+            <span class="hosp-time-chip sort-chip" data-sort="t1">T1 <span>${t1}</span></span>
+            <span class="hosp-time-chip sort-chip" data-sort="t2">T2 <span>${t2}</span></span>
+            <span class="hosp-time-chip sort-chip" data-sort="t3">T3 <span>${t3p50}</span></span>
           </div>
         </div>
       `;
     }).join('');
 
     // Click to zoom
+    // Row click
     list.querySelectorAll('.hosp-row').forEach(row => {
-      row.addEventListener('click', () => {
+      row.addEventListener('click', e => {
+        // Ignore if clicking a sort chip
+        if (e.target.closest('.sort-chip')) return;
         const code = row.dataset.code;
         const m = markers[code];
         if (!m) return;
@@ -317,6 +320,19 @@
         activeCode = code;
         document.querySelectorAll('.hosp-row').forEach(r => r.classList.remove('active'));
         row.classList.add('active');
+      });
+    });
+
+    // Sort chip click — sort list by that triage
+    list.querySelectorAll('.sort-chip').forEach(chip => {
+      chip.addEventListener('click', e => {
+        e.stopPropagation();
+        const key = chip.dataset.sort;
+        sortKey = key;
+        // Update sort button UI
+        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector(`.sort-btn[data-sort="${key}"]`)?.classList.add('active');
+        renderHospitalList();
       });
     });
   }
