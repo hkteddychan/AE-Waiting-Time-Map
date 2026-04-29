@@ -41,6 +41,67 @@
     #refresh-btn:hover { background: rgba(255,255,255,0.3); }
     
     #map { height: calc(100vh - 60px); width: 100%; }
+
+    /* ── Side Panel ─────────────────────────────────── */
+    #side-panel {
+      position: absolute;
+      top: 60px; left: 0;
+      width: 320px;
+      height: calc(100vh - 60px);
+      background: white;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.12);
+    }
+    #panel-header {
+      padding: 10px 12px 8px;
+      background: #fff8f8;
+      border-bottom: 2px solid #ffcdd2;
+      flex-shrink: 0;
+    }
+    #panel-header h3 { font-size: 0.85rem; color: #c62828; margin-bottom: 6px; }
+    .sort-row { display: flex; gap: 4px; flex-wrap: wrap; }
+    .sort-btn {
+      padding: 3px 9px; border: 1.5px solid #ef9a9a;
+      background: white; color: #c62828; border-radius: 12px;
+      cursor: pointer; font-size: 0.7rem; font-weight: 600;
+      transition: all 0.15s;
+    }
+    .sort-btn:hover { background: #ffcdd2; }
+    .sort-btn.active { background: #c62828; color: white; border-color: #c62828; }
+
+    #hospital-list {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+    }
+    .hosp-row {
+      padding: 8px 12px;
+      border-bottom: 1px solid #f5f5f5;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .hosp-row:hover { background: #fff3e0; }
+    .hosp-row.active { background: #ffebee; border-left: 3px solid #c62828; }
+    .hosp-row-top { display: flex; align-items: center; gap: 6px; }
+    .hosp-row-name { font-size: 0.8rem; font-weight: bold; color: #333; flex: 1; }
+    .hosp-row-badge {
+      font-size: 0.65rem; font-weight: 700; padding: 2px 7px;
+      border-radius: 10px; color: white; flex-shrink: 0;
+    }
+    .hosp-row-times { display: flex; gap: 8px; flex-wrap: wrap; }
+    .hosp-time-chip {
+      font-size: 0.65rem; color: #666; padding: 1px 5px;
+      background: #f5f5f5; border-radius: 4px;
+    }
+    .hosp-time-chip span { font-weight: 600; }
+    #panel-footer {
+      padding: 6px 12px;
+      background: #fafafa;
+      border-top: 1px solid #eee;
+      font-size: 0.65rem; color: #aaa;
+      flex-shrink: 0;
+    }
     
     #legend {
       position: absolute;
@@ -143,6 +204,20 @@
   載入急症室數據...
 </div>
 
+<div id="side-panel">
+  <div id="panel-header">
+    <h3>🏥 醫院輪候排序</h3>
+    <div class="sort-row">
+      <button class="sort-btn active" data-sort="t1">T1 危殆</button>
+      <button class="sort-btn" data-sort="t2">T2 危急</button>
+      <button class="sort-btn" data-sort="t3">T3 緊急</button>
+      <button class="sort-btn" data-sort="t45">T4/5</button>
+    </div>
+  </div>
+  <div id="hospital-list"></div>
+  <div id="panel-footer">點擊醫院名稱，地圖會飛到該位置並打開詳情</div>
+</div>
+
 <div id="map"></div>
 
 <div id="legend">
@@ -169,8 +244,82 @@
   let map, markers = {}, lastData = null, hospMap = {};
   let countdown = REFRESH_INTERVAL;
   let countdownTimer = null;
+  let sortKey = 't1'; // 't1' | 't2' | 't3' | 't45'
+  let activeCode = null;
+  let waitTimeData = []; // store merged data for list rendering
 
-  // Initialize map
+  // Get sort value for a hospital
+  function getSortVal(h, key) {
+    let str;
+    if (key === 't1') str = h.t1wt;
+    else if (key === 't2') str = h.t2wt;
+    else if (key === 't3') str = h.t3p50;
+    else str = h.t45p50;
+    const mins = parseMins(str);
+    return mins === null ? 99999 : mins;
+  }
+
+  // Render the sorted hospital list in side panel
+  function renderHospitalList() {
+    const list = document.getElementById('hospital-list');
+    const data = waitTimeData
+      .map(h => ({ h, sortVal: getSortVal(h, sortKey) }))
+      .sort((a, b) => a.sortVal - b.sortVal);
+
+    list.innerHTML = data.map(({ h }) => {
+      const hosp = h._hosp;
+      const t1 = h.t1wt || 'N/A';
+      const t2 = h.t2wt || 'N/A';
+      const t3p50 = h.t3p50 || 'N/A';
+      const t45p50 = h.t45p50 || 'N/A';
+      const t1mins = parseMins(t1);
+      const t2mins = parseMins(t2);
+      const t3mins = parseMins(t3p50);
+      const t45mins = parseMins(t45p50);
+
+      // Badge color: worst of the 4 tiers
+      let badgeColor = '#bdbdbd';
+      let badgeText = 'N/A';
+      const vals = [t1mins, t2mins, t3mins, t45mins].filter(v => v !== null);
+      if (vals.length > 0) {
+        const worst = Math.max(...vals);
+        if (worst <= 5) { badgeColor = '#4caf50'; badgeText = `${worst}分鐘`; }
+        else if (worst <= 15) { badgeColor = '#ff9800'; badgeText = `${worst}分鐘`; }
+        else if (worst <= 30) { badgeColor = '#e65100'; badgeText = `${worst}分鐘`; }
+        else if (worst <= 60) { badgeColor = '#c62828'; badgeText = `${worst}分鐘`; }
+        else { badgeColor = '#b71c1c'; badgeText = `${worst}分鐘`; }
+      }
+
+      const isActive = activeCode === hosp.code;
+      return `
+        <div class="hosp-row${isActive ? ' active' : ''}" data-code="${hosp.code}">
+          <div class="hosp-row-top">
+            <span class="hosp-row-name">${hosp.name_tc}</span>
+            <span class="hosp-row-badge" style="background:${badgeColor}">${badgeText}</span>
+          </div>
+          <div class="hosp-row-times">
+            <span class="hosp-time-chip">T1 <span>${t1}</span></span>
+            <span class="hosp-time-chip">T2 <span>${t2}</span></span>
+            <span class="hosp-time-chip">T3 <span>${t3p50}</span></span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Click to zoom
+    list.querySelectorAll('.hosp-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const code = row.dataset.code;
+        const m = markers[code];
+        if (!m) return;
+        map.flyTo(m.getLatLng(), 15, { animate: true, duration: 1 });
+        m.openPopup();
+        activeCode = code;
+        document.querySelectorAll('.hosp-row').forEach(r => r.classList.remove('active'));
+        row.classList.add('active');
+      });
+    });
+  }
   function initMap() {
     map = L.map('map').setView([22.396, 114.274], 11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -355,12 +504,17 @@
       document.getElementById('update-time').textContent = t;
 
       // Merge HA data with hospital coords, then update markers
+      waitTimeData = [];
       haJson.waitTime.forEach(hosp => {
         const match = hospMap[hosp.hospName];
         if (match) {
-          updateMarker({ ...hosp, _hosp: match });
+          const merged = { ...hosp, _hosp: match };
+          waitTimeData.push(merged);
+          updateMarker(merged);
         }
       });
+
+      renderHospitalList();
 
       // Hide loading
       document.getElementById('loading').classList.add('hide');
@@ -388,6 +542,16 @@
   initMap();
   fetchData();
   startCountdown();
+
+  // Sort button listeners
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      sortKey = btn.dataset.sort;
+      renderHospitalList();
+    });
+  });
 </script>
 </body>
 </html>
