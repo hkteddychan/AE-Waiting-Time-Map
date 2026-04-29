@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>香港急症室輪候時間</title>
+  <title>香港急症室輪候時間｜Live</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -13,142 +13,342 @@
     #header {
       background: linear-gradient(135deg, #c62828, #e53935);
       color: white;
-      padding: 20px;
-      text-align: center;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      position: relative;
+      z-index: 1000;
     }
-    #header h1 { font-size: 1.5rem; margin-bottom: 4px; }
-    #header p { font-size: 0.85rem; opacity: 0.9; }
-    #header .update { font-size: 0.75rem; opacity: 0.7; margin-top: 6px; }
+    #header h1 { font-size: 1.3rem; }
+    #header h1 span { font-size: 1.1rem; margin-right: 6px; }
+    #update-info { font-size: 0.75rem; opacity: 0.85; text-align: right; }
+    #update-info .time { font-size: 0.9rem; font-weight: bold; }
+    #update-info .countdown { font-size: 0.7rem; opacity: 0.7; }
     
-    #map { height: calc(100vh - 120px); width: 100%; }
+    #refresh-btn {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.4);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      margin-left: 12px;
+      transition: background 0.2s;
+    }
+    #refresh-btn:hover { background: rgba(255,255,255,0.3); }
+    
+    #map { height: calc(100vh - 60px); width: 100%; }
     
     #legend {
       position: absolute;
       bottom: 30px;
       right: 10px;
       background: white;
-      padding: 12px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      padding: 12px 14px;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
       z-index: 1000;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
+      min-width: 150px;
     }
-    #legend h4 { margin-bottom: 8px; font-size: 0.85rem; }
-    #legend .item { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
-    #legend .dot { width: 12px; height: 12px; border-radius: 50%; }
+    #legend h4 { margin-bottom: 8px; font-size: 0.85rem; color: #333; }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+    .legend-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
     
-    .custom-marker {
-      background: #c62828;
-      border: 3px solid white;
-      border-radius: 50%;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      width: 28px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    #info-panel {
+      position: absolute;
+      top: 70px;
+      left: 10px;
+      background: white;
+      padding: 14px;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      font-size: 0.78rem;
+      max-width: 200px;
+      display: none;
+    }
+    #info-panel.show { display: block; }
+    #info-panel .triage { font-size: 0.7rem; color: #666; margin-bottom: 4px; }
+    #info-panel .wt { font-size: 1.1rem; font-weight: bold; color: #333; margin-bottom: 6px; }
+    #info-panel .desc { font-size: 0.7rem; color: #888; line-height: 1.4; }
+    #info-panel .pct { font-size: 0.75rem; color: #555; margin-top: 4px; }
+    
+    .marker-label {
+      background: transparent;
+      border: none;
       color: white;
       font-weight: bold;
       font-size: 11px;
+      text-align: center;
+      width: 100%;
+      line-height: 1;
     }
     
-    .popup-content {
-      min-width: 200px;
-    }
-    .popup-content h3 {
+    .popup-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .popup-table th { background: #c62828; color: white; padding: 6px 10px; text-align: left; }
+    .popup-table td { padding: 5px 10px; border-bottom: 1px solid #eee; }
+    .popup-table tr:last-child td { border-bottom: none; }
+    .popup-table .triage-col { font-weight: bold; }
+    .popup-table .time-col { text-align: right; font-weight: bold; }
+    .popup-table .green { color: #2e7d32; }
+    .popup-table .yellow { color: #f57f17; }
+    .popup-table .orange { color: #e65100; }
+    .popup-table .red { color: #c62828; }
+    .popup-table .gray { color: #9e9e9e; }
+    .popup-header { font-size: 0.95rem; font-weight: bold; color: #c62828; margin-bottom: 8px; }
+    .popup-sub { font-size: 0.75rem; color: #666; margin-bottom: 10px; }
+    .popup-link { display: inline-block; margin-top: 8px; background: #c62828; color: white; padding: 6px 14px; border-radius: 20px; text-decoration: none; font-size: 0.78rem; }
+    .popup-link:hover { background: #b71c1c; }
+    
+    .loading-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.85);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+      font-size: 1.1rem;
       color: #c62828;
-      font-size: 1rem;
-      margin-bottom: 6px;
     }
-    .popup-content .en-name {
-      color: #666;
-      font-size: 0.8rem;
-      margin-bottom: 10px;
+    .loading-overlay.hide { display: none; }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 4px solid #ffcdd2;
+      border-top-color: #c62828;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 12px;
     }
-    .popup-content .btn {
-      display: inline-block;
-      background: #c62828;
-      color: white;
-      padding: 8px 16px;
-      border-radius: 20px;
-      text-decoration: none;
-      font-size: 0.85rem;
-      margin-top: 6px;
-    }
-    .popup-content .btn:hover { background: #b71c1c; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
 <div id="header">
-  <h1>🏥 香港急症室輪候時間</h1>
-  <p>點擊標記進入醫院網站查看即時輪候時間</p>
-  <div class="update">數據來源：CSDI Geoportal | 醫院管理局</div>
+  <h1><span>🏥</span>香港急症室輪候時間</h1>
+  <div style="display:flex;align-items:center;">
+    <div id="update-info">
+      <div>更新時間</div>
+      <div class="time" id="update-time">--:--</div>
+      <div class="countdown" id="countdown">下次更新：30秒</div>
+    </div>
+    <button id="refresh-btn" onclick="fetchData()">🔄 立即刷新</button>
+  </div>
+</div>
+
+<div id="loading" class="loading-overlay">
+  <div class="spinner"></div>
+  載入急症室數據...
 </div>
 
 <div id="map"></div>
 
 <div id="legend">
-  <h4>圖例</h4>
-  <div class="item"><div class="dot" style="background:#c62828"></div> 公立醫院急症室</div>
+  <h4>👇 緊急程度 / 輪候時間</h4>
+  <div class="legend-item"><div class="legend-dot" style="background:#c62828"></div> T1 危殆（分鐘）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#e53935"></div> T2 危急（分鐘）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff9800"></div> T3 緊急（中位數）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f44336"></div> T4/T5 次緊急/非緊急（中位數）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#bdbdbd"></div> 暂无数据</div>
+</div>
+
+<div id="info-panel">
+  <div class="triage" id="panel-triage"></div>
+  <div class="wt" id="panel-wt"></div>
+  <div class="desc" id="panel-desc"></div>
+  <div class="pct" id="panel-pct"></div>
 </div>
 
 <script>
-  const hospitals = [
-    { name_tc: "東區尤德夫人那打素醫院", name_en: "Pamela Youde Nethersole Eastern Hospital", lat: 22.26918, lon: 114.23643, code: "PYN" },
-    { name_tc: "律敦治醫院", name_en: "Ruttonjee Hospital", lat: 22.275909, lon: 114.17529, code: "RH" },
-    { name_tc: "長洲醫院", name_en: "St. John Hospital", lat: 22.208059, lon: 114.03151, code: "SJH" },
-    { name_tc: "瑪麗醫院", name_en: "Queen Mary Hospital", lat: 22.2704, lon: 114.13117, code: "QMH" },
-    { name_tc: "廣華醫院", name_en: "Kwong Wah Hospital", lat: 22.31429, lon: 114.1721, code: "KWH" },
-    { name_tc: "伊利沙伯醫院", name_en: "Queen Elizabeth Hospital", lat: 22.30886, lon: 114.17519, code: "QEH" },
-    { name_tc: "將軍澳醫院", name_en: "Tseung Kwan O Hospital", lat: 22.317964, lon: 114.27021, code: "TKO" },
-    { name_tc: "基督教聯合醫院", name_en: "United Christian Hospital", lat: 22.322291, lon: 114.2279, code: "UCH" },
-    { name_tc: "明愛醫院", name_en: "Caritas Medical Centre", lat: 22.340629, lon: 114.15231, code: "CMC" },
-    { name_tc: "北大嶼山醫院", name_en: "North Lantau Hospital", lat: 22.282571, lon: 113.93914, code: "NLT" },
-    { name_tc: "瑪嘉烈醫院", name_en: "Princess Margaret Hospital", lat: 22.340057, lon: 114.1347, code: "PMH" },
-    { name_tc: "仁濟醫院", name_en: "Yan Chai Hospital", lat: 22.369548, lon: 114.11956, code: "YCH" },
-    { name_tc: "雅麗氏何妙齡那打素醫院", name_en: "Alice Ho Miu Ling Nethersole Hospital", lat: 22.458696, lon: 114.17479, code: "AHN" },
-    { name_tc: "北區醫院", name_en: "North District Hospital", lat: 22.496832, lon: 114.12456, code: "NDH" },
-    { name_tc: "威爾斯親王醫院", name_en: "Prince of Wales Hospital", lat: 22.379939, lon: 114.20129, code: "PWH" },
-    { name_tc: "博愛醫院", name_en: "Pok Oi Hospital", lat: 22.44523, lon: 114.04159, code: "POH" },
-    { name_tc: "天水圍醫院", name_en: "Tin Shui Wai Hospital", lat: 22.458704, lon: 113.99585, code: "TSH" },
-    { name_tc: "屯門醫院", name_en: "Tuen Mun Hospital", lat: 22.40708, lon: 113.97621, code: "TMH" }
-  ];
+  const API_URL = 'https://www.ha.org.hk/aedwt/data/aedWtData2.json';
+  const REFRESH_INTERVAL = 30; // seconds
+  
+  let map, markers = {}, lastData = null;
+  let countdown = REFRESH_INTERVAL;
+  let countdownTimer = null;
 
-  // Initialize map centered on Hong Kong
-  const map = L.map('map').setView([22.396, 114.274], 11);
+  // Initialize map
+  function initMap() {
+    map = L.map('map').setView([22.396, 114.274], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 17
+    }).addTo(map);
+  }
 
-  // Add OpenStreetMap tiles
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: 17
-  }).addTo(map);
+  // Get waiting time color
+  function getColor(t1wt, t2wt, t3p50) {
+    // T1 (危殆) is most critical, use it primarily
+    if (t1wt && t1wt !== 'N/A') {
+      const mins = parseInt(t1wt);
+      if (mins === 0) return '#4caf50';
+      if (mins <= 5) return '#8bc34a';
+      if (mins <= 15) return '#ffeb3b';
+      if (mins <= 30) return '#ff9800';
+      return '#f44336';
+    }
+    // Fall back to T2
+    if (t2wt && t2wt !== 'N/A' && !t2wt.includes('少於')) {
+      return '#e53935';
+    }
+    // Fall back to T3
+    if (t3p50) {
+      const mins = parseInt(t3p50);
+      if (isNaN(mins)) return '#bdbdbd';
+      if (mins <= 30) return '#ff9800';
+      if (mins <= 60) return '#f44336';
+      return '#c62828';
+    }
+    return '#bdbdbd';
+  }
 
-  // Add markers
-  hospitals.forEach(h => {
-    const icon = L.divIcon({
-      className: 'custom-marker',
-      html: `<div class="custom-marker">${h.name_tc[0]}</div>`,
-      iconSize: [28, 28],
-      iconAnchor: [14, 14]
-    });
+  // Parse waiting time to minutes
+  function parseMins(str) {
+    if (!str || str === 'N/A' || !str) return null;
+    const hourMatch = str.match(/(\d+(?:\.\d+)?)\s*小時/);
+    if (hourMatch) return Math.round(parseFloat(hourMatch[1]) * 60);
+    const minMatch = str.match(/(\d+)\s*分鐘/);
+    if (minMatch) return parseInt(minMatch[1]);
+    return null;
+  }
 
-    const marker = L.marker([h.lat, h.lon], { icon }).addTo(map);
-    
-    const popupContent = `
-      <div class="popup-content">
-        <h3>${h.name_tc}</h3>
-        <div class="en-name">${h.name_en}</div>
-        <a href="https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=${h.code}" 
-           target="_blank" class="btn">
-          🏥 查看即時輪候時間
-        </a>
+  // Build popup content
+  function buildPopup(h) {
+    const t1 = h.t1wtB5 || 'N/A';
+    const t2 = h.t2wtB5 || 'N/A';
+    const t3p50 = h.t3p50B5 || 'N/A';
+    const t3p95 = h.t3p95B5 || 'N/A';
+    const t45p50 = h.t45p50B5 || 'N/A';
+    const t45p95 = h.t45p95B5 || 'N/A';
+    const t1mins = parseMins(t1);
+    const t2mins = parseMins(t2);
+    const t3mins = parseMins(t3p50);
+    const t45mins = parseMins(t45p50);
+
+    const t1color = t1mins === null ? 'gray' : t1mins <= 5 ? 'green' : t1mins <= 15 ? 'yellow' : t1mins <= 30 ? 'orange' : 'red';
+    const t2color = t2mins === null ? 'gray' : t2 === '少於 15 分鐘' ? 'green' : t2mins && t2mins <= 30 ? 'yellow' : 'orange';
+    const t3color = t3mins === null ? 'gray' : t3mins <= 30 ? 'yellow' : t3mins <= 60 ? 'orange' : 'red';
+    const t45color = t45mins === null ? 'gray' : t45mins <= 60 ? 'yellow' : t45mins <= 120 ? 'orange' : 'red';
+
+    return `
+      <div class="popup-header">${h.hospNameB5}</div>
+      <div class="popup-sub">${h.hospNameEn}</div>
+      <table class="popup-table">
+        <tr><th colspan="2">病人類別</th><th>最長輪候</th><th>等候時間</th></tr>
+        <tr>
+          <td style="background:#c62828;width:4px;padding:0;"></td>
+          <td class="triage-col">危殆 (T1)</td>
+          <td class="time-col ${t1color}">${t1}</td>
+        </tr>
+        <tr>
+          <td style="background:#e53935;width:4px;padding:0;"></td>
+          <td class="triage-col">危急 (T2)</td>
+          <td class="time-col ${t2color}">${t2}</td>
+        </tr>
+        <tr>
+          <td style="background:#ff9800;width:4px;padding:0;"></td>
+          <td class="triage-col">緊急 (T3) 中位數</td>
+          <td class="time-col ${t3color}">${t3p50}</td>
+        </tr>
+        <tr>
+          <td style="background:#f44336;width:4px;padding:0;"></td>
+          <td class="triage-col">次緊急/非緊急 (T4/5) 中位數</td>
+          <td class="time-col ${t45color}">${t45p50}</td>
+        </tr>
+      </table>
+      <div style="font-size:0.7rem;color:#888;margin-top:6px;">
+        📊 緊急(75th): ${t3p95} | 次緊急(75th): ${t45p95}
+      </div>
+      <div style="font-size:0.7rem;color:#aaa;margin-top:4px;">
+        🕐 最後更新: ${h.hospTimeB5}
       </div>
     `;
-    marker.bindPopup(popupContent);
-  });
-</script>
+  }
 
+  // Create or update marker
+  function updateMarker(h) {
+    const [lat, lon] = h.hospCoord.split(',').map(v => parseFloat(v.trim()));
+    const t1wt = h.t1wtB5 || 'N/A';
+    const t2wt = h.t2wtB5 || 'N/A';
+    const t3p50 = h.t3p50B5 || 'N/A';
+    const color = getColor(t1wt, t2wt, t3p50);
+    
+    // Short label (first char of hospital name)
+    const label = h.hospNameB5.substring(0, 2);
+    
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="
+        background:${color};
+        border:3px solid white;
+        border-radius:50%;
+        width:34px;height:34px;
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 2px 8px rgba(0,0,0,0.3);
+        color:white;font-weight:bold;font-size:11px;
+        cursor:pointer;
+      ">${label}</div>`,
+      iconSize: [34, 34],
+      iconAnchor: [17, 17]
+    });
+
+    if (markers[h.hospCode]) {
+      markers[h.hospCode].setIcon(icon);
+      markers[h.hospCode].setPopupContent(buildPopup(h));
+    } else {
+      const marker = L.marker([lat, lon], { icon }).addTo(map);
+      marker.bindPopup(buildPopup(h));
+      markers[h.hospCode] = marker;
+    }
+  }
+
+  // Fetch data from HA API
+  async function fetchData() {
+    try {
+      const resp = await fetch(API_URL, {
+        headers: { 'Referer': 'https://www.ha.org.hk/aedwt/' }
+      });
+      const json = await resp.json();
+      
+      if (json.success === 'Y' && json.result && json.result.hospData) {
+        lastData = json;
+        
+        // Update time display
+        const t = json.result.timeB5 || json.result.timeEn || '';
+        document.getElementById('update-time').textContent = t;
+        
+        // Update each hospital
+        json.result.hospData.forEach(updateMarker);
+        
+        // Hide loading
+        document.getElementById('loading').classList.add('hide');
+      }
+    } catch (err) {
+      console.error('Fetch error:', err);
+    }
+  }
+
+  // Countdown timer
+  function startCountdown() {
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdown = REFRESH_INTERVAL;
+    countdownTimer = setInterval(() => {
+      countdown--;
+      const el = document.getElementById('countdown');
+      if (el) el.textContent = `下次更新：${countdown}秒`;
+      if (countdown <= 0) {
+        fetchData();
+        countdown = REFRESH_INTERVAL;
+      }
+    }, 1000);
+  }
+
+  // Init
+  initMap();
+  fetchData();
+  startCountdown();
+</script>
 </body>
 </html>
