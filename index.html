@@ -250,8 +250,8 @@
     const t45color = t45mins === null ? 'gray' : t45mins <= 60 ? 'yellow' : t45mins <= 120 ? 'orange' : 'red';
 
     return `
-      <div class="popup-header">${h._hosp.hospNameB5}</div>
-      <div class="popup-sub">${h._hosp.hospNameEn}</div>
+      <div class="popup-header">${h._hosp.name_tc}</div>
+      <div class="popup-sub">${h._hosp.name_en}</div>
       <table class="popup-table">
         <tr><th colspan="2">病人類別</th><th>最長輪候</th><th>等候時間</th></tr>
         <tr>
@@ -287,14 +287,15 @@
   // Create or update marker
   function updateMarker(h) {
     const hosp = h._hosp;
-    const [lat, lon] = hosp.hospCoord.split(',').map(v => parseFloat(v.trim()));
+    const lat = hosp.lat;
+    const lon = hosp.lon;
     const t1wt = h.t1wt || 'N/A';
     const t2wt = h.t2wt || 'N/A';
     const t3p50 = h.t3p50 || 'N/A';
     const color = getColor(t1wt, t2wt, t3p50);
 
-    // Short label (first 2 chars of B5 name)
-    const label = hosp.hospNameB5.substring(0, 2);
+    // Short label (first 2 chars of TC name)
+    const label = hosp.name_tc.substring(0, 2);
 
     const icon = L.divIcon({
       className: '',
@@ -312,7 +313,7 @@
       iconAnchor: [17, 17]
     });
 
-    const key = hosp.hospCode;
+    const key = hosp.code;
     if (markers[key]) {
       markers[key].setIcon(icon);
       markers[key].setPopupContent(buildPopup(h));
@@ -333,14 +334,20 @@
       const haJson = await haResp.json();
       const hospJson = await hospResp.json();
 
-      // Build hospital lookup by name (handle "St. John" vs "St John" mismatch)
+      // Build hospital lookup by name_en (handle alias mismatches)
       hospMap = {};
       hospJson.forEach(h => {
-        hospMap[h.hospName] = h;
-        // Alias for St. John Hospital (with/without dot)
-        if (h.hospName === 'St. John Hospital') {
+        hospMap[h.name_en] = h;
+        hospMap[h.name_tc] = h;
+      });
+      // Alias for St. John / St John mismatch
+      hospJson.forEach(h => {
+        if (h.name_en === 'St. John Hospital') {
           hospMap['St John Hospital'] = h;
         }
+        // Normalize "Hospital" -> "Hosp" for API name lookup (API: "X Hospital", json: "X Hosp")
+        const apiForm = h.name_en.replace(/Hosp$/, 'Hospital');
+        if (apiForm !== h.name_en) hospMap[apiForm] = h;
       });
 
       // Update time display
