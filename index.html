@@ -162,10 +162,11 @@
 </div>
 
 <script>
-  const API_URL = 'https://www.ha.org.hk/aedwt/data/aedWtData2.json';
+  const API_URL = 'https://www.ha.org.hk/opendata/aed/aedwtdata2-en.json';
+  const HOSPITALS_URL = 'hospitals.json';
   const REFRESH_INTERVAL = 30; // seconds
-  
-  let map, markers = {}, lastData = null;
+
+  let map, markers = {}, lastData = null, hospMap = {};
   let countdown = REFRESH_INTERVAL;
   let countdownTimer = null;
 
@@ -182,7 +183,8 @@
   function getColor(t1wt, t2wt, t3p50) {
     // T1 (危殆) is most critical, use it primarily
     if (t1wt && t1wt !== 'N/A') {
-      const mins = parseInt(t1wt);
+      const mins = parseMins(t1wt);
+      if (mins === null) return '#bdbdbd';
       if (mins === 0) return '#4caf50';
       if (mins <= 5) return '#8bc34a';
       if (mins <= 15) return '#ffeb3b';
@@ -190,13 +192,13 @@
       return '#f44336';
     }
     // Fall back to T2
-    if (t2wt && t2wt !== 'N/A' && !t2wt.includes('少於')) {
+    if (t2wt && t2wt !== 'N/A' && !t2wt.toLowerCase().includes('less than 15')) {
       return '#e53935';
     }
     // Fall back to T3
     if (t3p50) {
-      const mins = parseInt(t3p50);
-      if (isNaN(mins)) return '#bdbdbd';
+      const mins = parseMins(t3p50);
+      if (mins === null) return '#bdbdbd';
       if (mins <= 30) return '#ff9800';
       if (mins <= 60) return '#f44336';
       return '#c62828';
@@ -204,37 +206,52 @@
     return '#bdbdbd';
   }
 
-  // Parse waiting time to minutes
+  // Parse waiting time to minutes (handles both Chinese and English)
   function parseMins(str) {
-    if (!str || str === 'N/A' || !str) return null;
-    const hourMatch = str.match(/(\d+(?:\.\d+)?)\s*小時/);
-    if (hourMatch) return Math.round(parseFloat(hourMatch[1]) * 60);
-    const minMatch = str.match(/(\d+)\s*分鐘/);
+    if (!str || str === 'N/A' || str === null) return null;
+    str = String(str);
+    // English: "0 minute", "1 hour 15 minutes", "less than 15 minutes"
+    if (str.toLowerCase().includes('less than')) {
+      const m = str.match(/less than\s*(\d+)/i);
+      return m ? parseInt(m[1]) : null;
+    }
+    const hourMatch = str.match(/(\d+(?:\.\d+)?)\s*hour/i);
+    if (hourMatch) {
+      const hours = parseFloat(hourMatch[1]);
+      const minMatch = str.match(/(\d+)\s*minute/i);
+      return Math.round(hours * 60 + (minMatch ? parseInt(minMatch[1]) : 0));
+    }
+    const minMatch = str.match(/(\d+)\s*minute/i);
     if (minMatch) return parseInt(minMatch[1]);
+    // Chinese fallback
+    const cnHour = str.match(/(\d+(?:\.\d+)?)\s*小時/);
+    if (cnHour) return Math.round(parseFloat(cnHour[1]) * 60);
+    const cnMin = str.match(/(\d+)\s*分鐘/);
+    if (cnMin) return parseInt(cnMin[1]);
     return null;
   }
 
   // Build popup content
   function buildPopup(h) {
-    const t1 = h.t1wtB5 || 'N/A';
-    const t2 = h.t2wtB5 || 'N/A';
-    const t3p50 = h.t3p50B5 || 'N/A';
-    const t3p95 = h.t3p95B5 || 'N/A';
-    const t45p50 = h.t45p50B5 || 'N/A';
-    const t45p95 = h.t45p95B5 || 'N/A';
+    const t1 = h.t1wt || 'N/A';
+    const t2 = h.t2wt || 'N/A';
+    const t3p50 = h.t3p50 || 'N/A';
+    const t3p95 = h.t3p95 || 'N/A';
+    const t45p50 = h.t45p50 || 'N/A';
+    const t45p95 = h.t45p95 || 'N/A';
     const t1mins = parseMins(t1);
     const t2mins = parseMins(t2);
     const t3mins = parseMins(t3p50);
     const t45mins = parseMins(t45p50);
 
     const t1color = t1mins === null ? 'gray' : t1mins <= 5 ? 'green' : t1mins <= 15 ? 'yellow' : t1mins <= 30 ? 'orange' : 'red';
-    const t2color = t2mins === null ? 'gray' : t2 === '少於 15 分鐘' ? 'green' : t2mins && t2mins <= 30 ? 'yellow' : 'orange';
+    const t2color = t2mins === null ? 'gray' : t2.toLowerCase().includes('less than 15') ? 'green' : t2mins && t2mins <= 30 ? 'yellow' : 'orange';
     const t3color = t3mins === null ? 'gray' : t3mins <= 30 ? 'yellow' : t3mins <= 60 ? 'orange' : 'red';
     const t45color = t45mins === null ? 'gray' : t45mins <= 60 ? 'yellow' : t45mins <= 120 ? 'orange' : 'red';
 
     return `
-      <div class="popup-header">${h.hospNameB5}</div>
-      <div class="popup-sub">${h.hospNameEn}</div>
+      <div class="popup-header">${h._hosp.hospNameB5}</div>
+      <div class="popup-sub">${h._hosp.hospNameEn}</div>
       <table class="popup-table">
         <tr><th colspan="2">病人類別</th><th>最長輪候</th><th>等候時間</th></tr>
         <tr>
@@ -262,22 +279,23 @@
         📊 緊急(75th): ${t3p95} | 次緊急(75th): ${t45p95}
       </div>
       <div style="font-size:0.7rem;color:#aaa;margin-top:4px;">
-        🕐 最後更新: ${h.hospTimeB5}
+        🕐 即時更新
       </div>
     `;
   }
 
   // Create or update marker
   function updateMarker(h) {
-    const [lat, lon] = h.hospCoord.split(',').map(v => parseFloat(v.trim()));
-    const t1wt = h.t1wtB5 || 'N/A';
-    const t2wt = h.t2wtB5 || 'N/A';
-    const t3p50 = h.t3p50B5 || 'N/A';
+    const hosp = h._hosp;
+    const [lat, lon] = hosp.hospCoord.split(',').map(v => parseFloat(v.trim()));
+    const t1wt = h.t1wt || 'N/A';
+    const t2wt = h.t2wt || 'N/A';
+    const t3p50 = h.t3p50 || 'N/A';
     const color = getColor(t1wt, t2wt, t3p50);
-    
-    // Short label (first char of hospital name)
-    const label = h.hospNameB5.substring(0, 2);
-    
+
+    // Short label (first 2 chars of B5 name)
+    const label = hosp.hospNameB5.substring(0, 2);
+
     const icon = L.divIcon({
       className: '',
       html: `<div style="
@@ -294,37 +312,51 @@
       iconAnchor: [17, 17]
     });
 
-    if (markers[h.hospCode]) {
-      markers[h.hospCode].setIcon(icon);
-      markers[h.hospCode].setPopupContent(buildPopup(h));
+    const key = hosp.hospCode;
+    if (markers[key]) {
+      markers[key].setIcon(icon);
+      markers[key].setPopupContent(buildPopup(h));
     } else {
       const marker = L.marker([lat, lon], { icon }).addTo(map);
       marker.bindPopup(buildPopup(h));
-      markers[h.hospCode] = marker;
+      markers[key] = marker;
     }
   }
 
-  // Fetch data from HA API
+  // Fetch data from HA API + hospitals.json, merge and update map
   async function fetchData() {
     try {
-      const resp = await fetch(API_URL, {
-        headers: { 'Referer': 'https://www.ha.org.hk/aedwt/' }
+      const [haResp, hospResp] = await Promise.all([
+        fetch(API_URL),
+        fetch(HOSPITALS_URL)
+      ]);
+      const haJson = await haResp.json();
+      const hospJson = await hospResp.json();
+
+      // Build hospital lookup by name (handle "St. John" vs "St John" mismatch)
+      hospMap = {};
+      hospJson.forEach(h => {
+        hospMap[h.hospName] = h;
+        // Alias for St. John Hospital (with/without dot)
+        if (h.hospName === 'St. John Hospital') {
+          hospMap['St John Hospital'] = h;
+        }
       });
-      const json = await resp.json();
-      
-      if (json.success === 'Y' && json.result && json.result.hospData) {
-        lastData = json;
-        
-        // Update time display
-        const t = json.result.timeB5 || json.result.timeEn || '';
-        document.getElementById('update-time').textContent = t;
-        
-        // Update each hospital
-        json.result.hospData.forEach(updateMarker);
-        
-        // Hide loading
-        document.getElementById('loading').classList.add('hide');
-      }
+
+      // Update time display
+      const t = haJson.updateTime || '';
+      document.getElementById('update-time').textContent = t;
+
+      // Merge HA data with hospital coords, then update markers
+      haJson.waitTime.forEach(hosp => {
+        const match = hospMap[hosp.hospName];
+        if (match) {
+          updateMarker({ ...hosp, _hosp: match });
+        }
+      });
+
+      // Hide loading
+      document.getElementById('loading').classList.add('hide');
     } catch (err) {
       console.error('Fetch error:', err);
     }
