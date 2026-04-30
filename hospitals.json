@@ -5,7 +5,7 @@
     "lat": 22.26918,
     "lon": 114.23643,
     "code": "PYN",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=PYN"
+    "link_tc": "#"
   },
   {
     "name_tc": "律敦治醫院",
@@ -13,7 +13,7 @@
     "lat": 22.275909,
     "lon": 114.17529,
     "code": "RH",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=RH"
+    "link_tc": "#"
   },
   {
     "name_tc": "長洲醫院",
@@ -21,7 +21,7 @@
     "lat": 22.208059,
     "lon": 114.03151,
     "code": "SJH",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=SJH"
+    "link_tc": "#"
   },
   {
     "name_tc": "瑪麗醫院",
@@ -29,7 +29,7 @@
     "lat": 22.2704,
     "lon": 114.13117,
     "code": "QMH",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=QMH"
+    "link_tc": "#"
   },
   {
     "name_tc": "廣華醫院",
@@ -37,7 +37,7 @@
     "lat": 22.31429,
     "lon": 114.1721,
     "code": "KWH",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=KWH"
+    "link_tc": "#"
   },
   {
     "name_tc": "伊利沙伯醫院",
@@ -45,7 +45,7 @@
     "lat": 22.30886,
     "lon": 114.17519,
     "code": "QEH",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=QEH"
+    "link_tc": "#"
   },
   {
     "name_tc": "將軍澳醫院",
@@ -53,7 +53,7 @@
     "lat": 22.317964,
     "lon": 114.27021,
     "code": "TKO",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=TKO"
+    "link_tc": "#"
   },
   {
     "name_tc": "基督教聯合醫院",
@@ -61,7 +61,7 @@
     "lat": 22.322291,
     "lon": 114.2279,
     "code": "UCH",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=UCH"
+    "link_tc": "#"
   },
   {
     "name_tc": "明愛醫院",
@@ -69,7 +69,7 @@
     "lat": 22.340629,
     "lon": 114.15231,
     "code": "CMC",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=CMC"
+    "link_tc": "#"
   },
   {
     "name_tc": "北大嶼山醫院",
@@ -77,7 +77,7 @@
     "lat": 22.282571,
     "lon": 113.93914,
     "code": "NLT",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=NLT"
+    "link_tc": "#"
   },
   {
     "name_tc": "瑪嘉烈醫院",
@@ -85,7 +85,7 @@
     "lat": 22.340057,
     "lon": 114.1347,
     "code": "PMH",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=PMH"
+    "link_tc": "#"
   },
   {
     "name_tc": "仁濟醫院",
@@ -93,7 +93,7 @@
     "lat": 22.369548,
     "lon": 114.11956,
     "code": "YCH",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=YCH"
+    "link_tc": "#"
   },
   {
     "name_tc": "雅麗氏何妙齡那打素醫院",
@@ -101,7 +101,7 @@
     "lat": 22.458696,
     "lon": 114.17479,
     "code": "AHN",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=AHN"
+    "link_tc": "#"
   },
   {
     "name_tc": "北區醫院",
@@ -109,7 +109,7 @@
     "lat": 22.496832,
     "lon": 114.12456,
     "code": "NDH",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=NDH"
+    "link_tc": "#"
   },
   {
     "name_tc": "威爾斯親王醫院",
@@ -117,7 +117,7 @@
     "lat": 22.379939,
     "lon": 114.20129,
     "code": "PWH",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=PWH"
+    "link_tc": "#"
   },
   {
     "name_tc": "博愛醫院",
@@ -125,7 +125,7 @@
     "lat": 22.44523,
     "lon": 114.04159,
     "code": "POH",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=POH"
+    "link_tc": "#"
   },
   {
     "name_tc": "天水圍醫院",
@@ -133,7 +133,7 @@
     "lat": 22.458704,
     "lon": 113.99585,
     "code": "TSH",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=TSH"
+    "link_tc": "#"
   },
   {
     "name_tc": "屯門醫院",
@@ -141,6 +141,6 @@
     "lat": 22.40708,
     "lon": 113.97621,
     "code": "TMH",
-    "link_tc": "https://www.ha.org.hk/aedwt/index.html?Lang=chib5&AEHospital=TMH"
+    "link_tc": "#"
   }
 ]
