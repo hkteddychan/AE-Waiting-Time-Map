@@ -140,22 +140,28 @@
     /* ── Legend ──────────────────────────────────── */
     #legend {
       position: absolute;
-      bottom: 30px;
-      right: 10px;
+      top: 68px; left: 10px;
       background: white;
-      padding: 12px 14px;
+      padding: 10px 12px;
       border-radius: 12px;
       box-shadow: 0 2px 12px rgba(0,0,0,0.18);
-      z-index: 1000;
-      font-size: 0.72rem;
-      min-width: 160px;
-      max-width: 200px;
+      z-index: 999;
+      font-size: 0.7rem;
+      min-width: 150px;
+      max-width: 170px;
+      transition: opacity 0.25s ease, transform 0.25s ease;
     }
-    #legend h4 { margin-bottom: 8px; font-size: 0.8rem; color: #333; }
-    .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
-    .legend-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.8); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-    .legend-threshold { font-size: 0.65rem; color: #888; margin-top: 8px; padding-top: 6px; border-top: 1px solid #eee; }
-    .legend-threshold div { margin: 2px 0; }
+    #legend.hidden-legend { opacity: 0; pointer-events: none; transform: translateY(-6px); }
+    #legend h4 { margin-bottom: 6px; font-size: 0.75rem; color: #333; display: flex; align-items: center; justify-content: space-between; }
+    .legend-item { display: flex; align-items: center; gap: 7px; margin: 3px 0; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.8); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .legend-threshold { font-size: 0.62rem; color: #888; margin-top: 6px; padding-top: 5px; border-top: 1px solid #eee; line-height: 1.5; }
+    .legend-threshold div { margin: 1px 0; }
+    #legend-toggle {
+      background: none; border: none; cursor: pointer; font-size: 0.7rem;
+      color: #999; padding: 0; line-height: 1;
+    }
+    #legend-toggle:hover { color: #c62828; }
 
     /* ── Info Panel (mini tooltip) ───────────────── */
     #info-panel {
@@ -267,8 +273,8 @@
       #side-panel.hidden-panel ~ #panel-toggle { bottom: 8px; }
 
       #legend {
-        bottom: 70px;
-        right: 8px;
+        top: 68px; left: auto; right: 8px;
+        bottom: auto;
         min-width: 140px;
         font-size: 0.68rem;
       }
@@ -344,7 +350,7 @@
 <div id="map"></div>
 
 <div id="legend">
-  <h4>👇 顏色 = T1 輪候時間</h4>
+  <h4>👇 顏色圖例 <button id="legend-toggle" onclick="toggleLegend()" title="隱藏圖例">✕</button></h4>
   <div class="legend-item"><div class="legend-dot" style="background:#4caf50"></div> 0–5 分鐘（最快）</div>
   <div class="legend-item"><div class="legend-dot" style="background:#cddc39"></div> 6–15 分鐘</div>
   <div class="legend-item"><div class="legend-dot" style="background:#ff9800"></div> 16–30 分鐘</div>
@@ -352,10 +358,10 @@
   <div class="legend-item"><div class="legend-dot" style="background:#b71c1c"></div> 60+ 分鐘（最長）</div>
   <div class="legend-item"><div class="legend-dot" style="background:#bdbdbd"></div> 暂无數據</div>
   <div class="legend-threshold">
-    <div>🏥 T1（危殆）— 生命危險即時處理</div>
-    <div>⚡ T2（危急）— 嚴重創傷優先</div>
-    <div>⏱️ T3（緊急）— 穩定狀況按序</div>
-    <div>📋 T4/5（非緊急）— 輪候時間最長</div>
+    <div>🏥 T1 危殆 — 生命危險即時處理</div>
+    <div>⚡ T2 危急 — 嚴重創傷優先</div>
+    <div>⏱️ T3 緊急 — 穩定狀況按序</div>
+    <div>📋 T4/5 非緊急 — 輪候最長</div>
   </div>
 </div>
 
@@ -566,6 +572,15 @@
     panel.classList.toggle('hidden-panel');
     btn.classList.toggle('shifted');
     btn.textContent = panel.classList.contains('hidden-panel') ? '▶' : '◀';
+  }
+
+  /* ── Legend toggle ────────────────────────────── */
+  function toggleLegend() {
+    const legend = document.getElementById('legend');
+    const btn = document.getElementById('legend-toggle');
+    const isHidden = legend.classList.toggle('hidden-legend');
+    btn.textContent = isHidden ? '▶' : '✕';
+    btn.title = isHidden ? '顯示圖例' : '隱藏圖例';
   }
 
   /* ── Snackbar ──────────────────────────────────── */
