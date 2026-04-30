@@ -9,71 +9,100 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif; }
-    
+
+    /* ── Header ─────────────────────────────────── */
     #header {
       background: linear-gradient(135deg, #c62828, #e53935);
       color: white;
-      padding: 14px 20px;
+      padding: 10px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       position: relative;
-      z-index: 1000;
+      z-index: 1100;
+      gap: 8px;
     }
-    #header h1 { font-size: 1.3rem; }
-    #header h1 span { font-size: 1.1rem; margin-right: 6px; }
-    #update-info { font-size: 0.75rem; opacity: 0.85; text-align: right; }
-    #update-info .time { font-size: 0.9rem; font-weight: bold; }
-    #update-info .countdown { font-size: 0.7rem; opacity: 0.7; }
-    
+    #header h1 { font-size: 1.1rem; white-space: nowrap; }
+    #header h1 span { margin-right: 4px; }
+    #update-info { text-align: right; flex: 1; min-width: 0; }
+    #update-info .time { font-size: 0.85rem; font-weight: bold; }
+    #update-info .last-updated { font-size: 0.65rem; opacity: 0.75; }
+    #update-info .countdown { font-size: 0.65rem; opacity: 0.7; }
+
     #refresh-btn {
       background: rgba(255,255,255,0.2);
       border: 1px solid rgba(255,255,255,0.4);
-      color: white;
-      padding: 6px 14px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      margin-left: 12px;
+      color: white; padding: 5px 10px;
+      border-radius: 16px; cursor: pointer;
+      font-size: 0.75rem; white-space: nowrap;
       transition: background 0.2s;
+      flex-shrink: 0;
     }
-    #refresh-btn:hover { background: rgba(255,255,255,0.3); }
-    
-    #map { height: calc(100vh - 60px); width: 100%; }
+    #refresh-btn:hover { background: rgba(255,255,255,0.35); }
+    #refresh-btn.loading { opacity: 0.6; pointer-events: none; }
+    #refresh-btn.loading::after { content: ' ⟳'; animation: spin 1s linear infinite; }
 
-    /* ── Side Panel ─────────────────────────────────── */
+    /* ── Map ──────────────────────────────────── */
+    #map { height: calc(100vh - 54px); width: 100%; }
+
+    /* ── Side Panel (Desktop) ────────────────────── */
     #side-panel {
       position: absolute;
-      top: 60px; left: 0;
-      width: 320px;
-      height: calc(100vh - 60px);
+      top: 54px; left: 0;
+      width: 300px;
+      height: calc(100vh - 54px);
       background: white;
       z-index: 1000;
       display: flex;
       flex-direction: column;
       box-shadow: 2px 0 12px rgba(0,0,0,0.12);
+      transition: transform 0.3s ease;
     }
+    #side-panel.hidden-panel { transform: translateX(-100%); }
+
+    /* Toggle button — floats on left edge of map when panel hidden */
+    #panel-toggle {
+      position: absolute;
+      top: 70px; left: 8px;
+      z-index: 1001;
+      background: white;
+      border: none;
+      border-radius: 0 8px 8px 0;
+      box-shadow: -2px 2px 8px rgba(0,0,0,0.15);
+      cursor: pointer;
+      width: 28px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      transition: left 0.3s ease;
+    }
+    #panel-toggle.shifted { left: 0; border-radius: 0 8px 8px 0; }
+    #side-panel.hidden-panel ~ #panel-toggle { left: 0; }
+
+    /* ── Panel Header ────────────────────────────── */
     #panel-header {
       padding: 10px 12px 8px;
       background: #fff8f8;
       border-bottom: 2px solid #ffcdd2;
       flex-shrink: 0;
     }
-    #panel-header h3 { font-size: 0.85rem; color: #c62828; margin-bottom: 6px; }
+    #panel-header h3 { font-size: 0.8rem; color: #c62828; margin-bottom: 6px; }
+
+    /* Sort row */
     .sort-row { display: flex; gap: 4px; flex-wrap: wrap; }
     .sort-btn {
-      padding: 3px 9px; border: 1.5px solid #ef9a9a;
-      background: white; color: #c62828; border-radius: 12px;
-      cursor: pointer; font-size: 0.7rem; font-weight: 600;
-      transition: all 0.15s;
+      padding: 4px 8px; border: 1.5px solid #ef9a9a;
+      background: white; color: #c62828; border-radius: 14px;
+      cursor: pointer; font-size: 0.68rem; font-weight: 600;
+      transition: all 0.15s; display: flex; align-items: center; gap: 3px;
     }
     .sort-btn:hover { background: #ffcdd2; }
     .sort-btn.active { background: #c62828; color: white; border-color: #c62828; }
+    .sort-btn .dir { font-size: 0.6rem; opacity: 0.7; }
+    .sort-btn.active .dir { opacity: 1; }
 
-    #hospital-list {
-      flex: 1; overflow-y: auto; overflow-x: hidden;
-    }
+    /* ── Hospital List ────────────────────────────── */
+    #hospital-list { flex: 1; overflow-y: auto; overflow-x: hidden; }
     .hosp-row {
       padding: 8px 12px;
       border-bottom: 1px solid #f5f5f5;
@@ -84,118 +113,202 @@
     .hosp-row:hover { background: #fff3e0; }
     .hosp-row.active { background: #ffebee; border-left: 3px solid #c62828; }
     .hosp-row-top { display: flex; align-items: center; gap: 6px; }
-    .hosp-row-name { font-size: 0.8rem; font-weight: bold; color: #333; flex: 1; }
+    .hosp-row-name { font-size: 0.78rem; font-weight: bold; color: #333; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .hosp-row-badge {
-      font-size: 0.65rem; font-weight: 700; padding: 2px 7px;
+      font-size: 0.62rem; font-weight: 700; padding: 2px 7px;
       border-radius: 10px; color: white; flex-shrink: 0;
     }
-    .hosp-row-times { display: flex; gap: 8px; flex-wrap: wrap; }
+    .hosp-row-dist { font-size: 0.62rem; color: #999; }
+    .hosp-row-times { display: flex; gap: 6px; flex-wrap: wrap; }
     .hosp-time-chip {
-      font-size: 0.65rem; color: #666; padding: 1px 5px;
+      font-size: 0.62rem; color: #666; padding: 1px 5px;
       background: #f5f5f5; border-radius: 4px;
     }
     .hosp-time-chip span { font-weight: 600; }
+    .hosp-time-chip .t1-label { color: #c62828; }
+    .hosp-time-chip .t2-label { color: #e53935; }
+    .hosp-time-chip .t3-label { color: #e65100; }
+
+    /* ── Panel Footer ─────────────────────────────── */
     #panel-footer {
       padding: 6px 12px;
       background: #fafafa;
       border-top: 1px solid #eee;
-      font-size: 0.65rem; color: #aaa;
-      flex-shrink: 0;
+      font-size: 0.62rem; color: #aaa; flex-shrink: 0;
     }
-    
+
+    /* ── Legend ──────────────────────────────────── */
     #legend {
       position: absolute;
       bottom: 30px;
       right: 10px;
       background: white;
       padding: 12px 14px;
-      border-radius: 10px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
       z-index: 1000;
-      font-size: 0.78rem;
-      min-width: 150px;
+      font-size: 0.72rem;
+      min-width: 160px;
+      max-width: 200px;
     }
-    #legend h4 { margin-bottom: 8px; font-size: 0.85rem; color: #333; }
-    .legend-item { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
-    .legend-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
-    
+    #legend h4 { margin-bottom: 8px; font-size: 0.8rem; color: #333; }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+    .legend-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.8); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .legend-threshold { font-size: 0.65rem; color: #888; margin-top: 8px; padding-top: 6px; border-top: 1px solid #eee; }
+    .legend-threshold div { margin: 2px 0; }
+
+    /* ── Info Panel (mini tooltip) ───────────────── */
     #info-panel {
       position: absolute;
-      top: 70px;
-      left: 10px;
+      top: 68px; left: 10px;
       background: white;
-      padding: 14px;
-      border-radius: 10px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      padding: 12px 14px;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
       z-index: 1000;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       max-width: 200px;
       display: none;
     }
     #info-panel.show { display: block; }
-    #info-panel .triage { font-size: 0.7rem; color: #666; margin-bottom: 4px; }
-    #info-panel .wt { font-size: 1.1rem; font-weight: bold; color: #333; margin-bottom: 6px; }
-    #info-panel .desc { font-size: 0.7rem; color: #888; line-height: 1.4; }
-    #info-panel .pct { font-size: 0.75rem; color: #555; margin-top: 4px; }
-    
-    .marker-label {
-      background: transparent;
-      border: none;
-      color: white;
-      font-weight: bold;
-      font-size: 11px;
-      text-align: center;
-      width: 100%;
-      line-height: 1;
+    #info-panel .triage { font-size: 0.68rem; color: #666; margin-bottom: 3px; }
+    #info-panel .wt { font-size: 1.05rem; font-weight: bold; color: #333; margin-bottom: 5px; }
+    #info-panel .desc { font-size: 0.68rem; color: #888; line-height: 1.4; }
+
+    /* ── Snackbar ───────────────────────────────── */
+    #snackbar {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: #333; color: white; padding: 10px 20px;
+      border-radius: 8px; z-index: 9999;
+      font-size: 0.8rem;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-    
-    .popup-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-    .popup-table th { background: #c62828; color: white; padding: 6px 10px; text-align: left; }
-    .popup-table td { padding: 5px 10px; border-bottom: 1px solid #eee; }
+    #snackbar.show { display: block; animation: slideUp 0.3s ease; }
+    #snackbar.error { background: #c62828; }
+    @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+    /* ── Loading Overlay ─────────────────────────── */
+    .loading-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.88);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999; font-size: 1rem; color: #c62828;
+    }
+    .loading-overlay.hide { display: none; }
+    .spinner { width: 32px; height: 32px; border: 4px solid #ffcdd2; border-top-color: #c62828; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Markers ─────────────────────────────────── */
+    .marker-label { background: transparent; border: none; color: white; font-weight: bold; font-size: 11px; text-align: center; width: 100%; line-height: 1; }
+
+    /* ── Popup ──────────────────────────────────── */
+    .popup-header { font-size: 0.95rem; font-weight: bold; color: #c62828; margin-bottom: 4px; }
+    .popup-sub { font-size: 0.72rem; color: #666; margin-bottom: 8px; }
+    .popup-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .popup-table th { background: #c62828; color: white; padding: 5px 8px; text-align: left; font-size: 0.72rem; }
+    .popup-table td { padding: 4px 8px; border-bottom: 1px solid #eee; }
     .popup-table tr:last-child td { border-bottom: none; }
-    .popup-table .triage-col { font-weight: bold; }
+    .popup-table .triage-col { font-weight: 600; }
     .popup-table .time-col { text-align: right; font-weight: bold; }
     .popup-table .green { color: #2e7d32; }
-    .popup-table .yellow { color: #f57f17; }
+    .popup-table .yellow { color: #b77a00; }
     .popup-table .orange { color: #e65100; }
     .popup-table .red { color: #c62828; }
     .popup-table .gray { color: #9e9e9e; }
-    .popup-header { font-size: 0.95rem; font-weight: bold; color: #c62828; margin-bottom: 8px; }
-    .popup-sub { font-size: 0.75rem; color: #666; margin-bottom: 10px; }
-    .popup-link { display: inline-block; margin-top: 8px; background: #c62828; color: white; padding: 6px 14px; border-radius: 20px; text-decoration: none; font-size: 0.78rem; }
+    .popup-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .popup-link { display: inline-block; background: #c62828; color: white; padding: 5px 12px; border-radius: 16px; text-decoration: none; font-size: 0.72rem; cursor: pointer; border: none; }
     .popup-link:hover { background: #b71c1c; }
-    
-    .loading-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(255,255,255,0.85);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 9999;
-      font-size: 1.1rem;
-      color: #c62828;
+    .popup-nav { display: inline-block; background: #1565c0; color: white; padding: 5px 12px; border-radius: 16px; text-decoration: none; font-size: 0.72rem; cursor: pointer; }
+    .popup-nav:hover { background: #0d47a1; }
+    .popup-update { font-size: 0.65rem; color: #aaa; margin-top: 6px; }
+    .popup-extra { font-size: 0.65rem; color: #888; margin-top: 3px; }
+
+    /* ── Mobile Bottom Sheet ─────────────────────── */
+    @media (max-width: 768px) {
+      #map { height: calc(100vh - 54px); width: 100%; }
+
+      #side-panel {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        top: auto;
+        width: 100%;
+        height: 45vh;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.18);
+        transform: translateY(0);
+        transition: transform 0.3s ease;
+      }
+      #side-panel.hidden-panel { transform: translateY(calc(100% - 60px)); }
+
+      /* Drag handle for bottom sheet */
+      #side-panel::before {
+        content: '';
+        display: block;
+        width: 40px; height: 4px;
+        background: #ccc;
+        border-radius: 2px;
+        margin: 8px auto;
+        flex-shrink: 0;
+      }
+
+      /* Toggle button for mobile */
+      #panel-toggle {
+        position: fixed;
+        bottom: 8px; left: 50%; transform: translateX(-50%);
+        top: auto;
+        border-radius: 20px;
+        width: auto; height: 36px;
+        padding: 0 16px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+        z-index: 1001;
+      }
+      #panel-toggle.shifted { left: 50%; transform: translateX(-50%); bottom: 8px; }
+      #side-panel.hidden-panel ~ #panel-toggle { bottom: 8px; }
+
+      #legend {
+        bottom: 70px;
+        right: 8px;
+        min-width: 140px;
+        font-size: 0.68rem;
+      }
     }
-    .loading-overlay.hide { display: none; }
-    .spinner {
-      width: 36px; height: 36px;
-      border: 4px solid #ffcdd2;
-      border-top-color: #c62828;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-right: 12px;
+
+    /* ── Pulse animation for imminent ───────────── */
+    @keyframes pulse-warn {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(200, 50, 50, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(200, 50, 50, 0); }
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .badge-imminent { animation: pulse-warn 1.5s ease-in-out infinite; }
+
+    /* ── Refresh overlay on map ─────────────────── */
+    .map-refreshing {
+      pointer-events: none;
+    }
+    .map-refreshing::after {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.25);
+      z-index: 900;
+      animation: fadeOverlay 0.3s ease;
+    }
+    @keyframes fadeOverlay { from { opacity: 0 } to { opacity: 1 } }
+
+    /* ── Countdown warning ───────────────────────── */
+    .countdown-warn { color: #ff6b6b !important; font-weight: bold; }
   </style>
 </head>
 <body>
 
 <div id="header">
-  <h1><span>🏥</span>香港急症室輪候時間</h1>
-  <div style="display:flex;align-items:center;">
+  <h1><span>🏥</span>急症室輪候</h1>
+  <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end;">
     <div id="update-info">
-      <div>更新時間</div>
       <div class="time" id="update-time">--:--</div>
-      <div class="countdown" id="countdown">下次更新：30秒</div>
+      <div class="last-updated" id="last-updated">尚未更新</div>
+      <div class="countdown" id="countdown">自動更新 30秒</div>
     </div>
-    <button id="refresh-btn" onclick="fetchData()">🔄 立即刷新</button>
+    <button id="refresh-btn" onclick="manualRefresh()">🔄 立即刷新</button>
   </div>
 </div>
 
@@ -208,196 +321,82 @@
   <div id="panel-header">
     <h3>🏥 醫院輪候排序</h3>
     <div class="sort-row">
-      <button class="sort-btn active" data-sort="t1">T1 危殆</button>
-      <button class="sort-btn" data-sort="t2">T2 危急</button>
-      <button class="sort-btn" data-sort="t3">T3 緊急</button>
-      <button class="sort-btn" data-sort="t45">T4/5</button>
+      <button class="sort-btn active" data-sort="t1" title="按 T1 危殆排序">
+        <span>T1</span><span class="dir">▲</span>
+      </button>
+      <button class="sort-btn" data-sort="t2" title="按 T2 危急排序">
+        <span>T2</span><span class="dir">▲</span>
+      </button>
+      <button class="sort-btn" data-sort="t3" title="按 T3 緊急排序">
+        <span>T3</span><span class="dir">▲</span>
+      </button>
+      <button class="sort-btn" data-sort="t45" title="按 T4/5 非緊急排序">
+        <span>T4/5</span><span class="dir">▲</span>
+      </button>
     </div>
   </div>
   <div id="hospital-list"></div>
-  <div id="panel-footer">點擊醫院名稱，地圖會飛到該位置並打開詳情</div>
+  <div id="panel-footer">👆 點擊醫院名稱 / 地圖飛到該位置</div>
 </div>
+
+<button id="panel-toggle" onclick="togglePanel()" title="顯示/隱藏面板">◀</button>
 
 <div id="map"></div>
 
 <div id="legend">
-  <h4>👇 緊急程度 / 輪候時間</h4>
-  <div class="legend-item"><div class="legend-dot" style="background:#c62828"></div> T1 危殆（分鐘）</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#e53935"></div> T2 危急（分鐘）</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#ff9800"></div> T3 緊急（中位數）</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#f44336"></div> T4/T5 次緊急/非緊急（中位數）</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#bdbdbd"></div> 暂无数据</div>
+  <h4>👇 顏色 = T1 輪候時間</h4>
+  <div class="legend-item"><div class="legend-dot" style="background:#4caf50"></div> 0–5 分鐘（最快）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#cddc39"></div> 6–15 分鐘</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff9800"></div> 16–30 分鐘</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f44336"></div> 31–60 分鐘</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#b71c1c"></div> 60+ 分鐘（最長）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#bdbdbd"></div> 暂无數據</div>
+  <div class="legend-threshold">
+    <div>🏥 T1（危殆）— 生命危險即時處理</div>
+    <div>⚡ T2（危急）— 嚴重創傷優先</div>
+    <div>⏱️ T3（緊急）— 穩定狀況按序</div>
+    <div>📋 T4/5（非緊急）— 輪候時間最長</div>
+  </div>
 </div>
 
 <div id="info-panel">
   <div class="triage" id="panel-triage"></div>
   <div class="wt" id="panel-wt"></div>
   <div class="desc" id="panel-desc"></div>
-  <div class="pct" id="panel-pct"></div>
 </div>
 
+<div id="snackbar"></div>
+
 <script>
+  /* ── Config ─────────────────────────────────────── */
   const API_URL = 'https://www.ha.org.hk/opendata/aed/aedwtdata2-en.json';
   const HOSPITALS_URL = 'hospitals.json';
-  const REFRESH_INTERVAL = 30; // seconds
+  const REFRESH_INTERVAL = 30;
 
+  /* ── State ──────────────────────────────────────── */
   let map, markers = {}, lastData = null, hospMap = {};
   let countdown = REFRESH_INTERVAL;
   let countdownTimer = null;
-  let sortKey = 't1'; // 't1' | 't2' | 't3' | 't45'
+  let sortKey = 't1';
+  let sortDir = 'asc'; // 'asc' = 短在前, 'desc' = 長在前
   let activeCode = null;
-  let waitTimeData = []; // store merged data for list rendering
+  let waitTimeData = [];
+  let lastUpdatedMs = null;
+  let dataStale = false;
+  let userLatLng = null;
 
-  // Get sort values for a hospital: [t1, t2, t3, t45] in minutes.
-  // null → 99999 so hospitals with data sort before those without.
-  // "less than X" treated as X for consistent sorting.
-  function getSortVal(h) {
-    const t1 = parseMins(h.t1wt) ?? 99999;
-    const t2raw = h.t2wt || '';
-    const t2 = t2raw.toLowerCase().includes('less than')
-      ? parseInt(t2raw.match(/less than\s*(\d+)/i)?.[1] || '99999')
-      : (parseMins(t2raw) ?? 99999);
-    const t3 = parseMins(h.t3p50) ?? 99999;
-    const t45 = parseMins(h.t45p50) ?? 99999;
-    return [t1, t2, t3, t45];
-  }
+  /* ── Triage labels ──────────────────────────────── */
+  const TRIAGE_LABELS = {
+    t1: 'T1 危殆',
+    t2: 'T2 危急',
+    t3: 'T3 緊急',
+    t45: 'T4/5 非緊急'
+  };
 
-  // Sort comparator: compare two [t1,t2,t3,t45] arrays.
-  // primaryKey optionally sets which tier is primary (others as tiebreakers).
-  function cmpSortVals(a, b, primaryIdx) {
-    if (primaryIdx !== undefined) {
-      // Primary tier first, then remaining tiers in order
-      const order = [primaryIdx, 0, 1, 2, 3].filter((v, i, arr) => arr.indexOf(v) === i);
-      for (const i of order) {
-        if (a[i] !== b[i]) return a[i] - b[i];
-      }
-    } else {
-      // Default: T1→T2→T3→T45 standard multi-tier sort
-      for (let i = 0; i < 4; i++) {
-        if (a[i] !== b[i]) return a[i] - b[i];
-      }
-    }
-    return 0;
-  }
-
-  // Render the sorted hospital list in side panel
-  function renderHospitalList() {
-    const list = document.getElementById('hospital-list');
-    const tierIdx = { t1: 0, t2: 1, t3: 2, t45: 3 }[sortKey];
-    const data = waitTimeData
-      .map(h => ({ h, sortVal: getSortVal(h) }))
-      .sort((a, b) => cmpSortVals(a.sortVal, b.sortVal, tierIdx));
-
-    list.innerHTML = data.map(({ h }) => {
-      const hosp = h._hosp;
-      const t1 = h.t1wt || 'N/A';
-      const t2 = h.t2wt || 'N/A';
-      const t3p50 = h.t3p50 || 'N/A';
-      const t45p50 = h.t45p50 || 'N/A';
-      const t1mins = parseMins(t1);
-      const t2mins = parseMins(t2);
-      const t3mins = parseMins(t3p50);
-      const t45mins = parseMins(t45p50);
-
-      // Badge color: worst of the 4 tiers
-      let badgeColor = '#bdbdbd';
-      let badgeText = 'N/A';
-      const vals = [t1mins, t2mins, t3mins, t45mins].filter(v => v !== null);
-      if (vals.length > 0) {
-        const worst = Math.max(...vals);
-        if (worst <= 5) { badgeColor = '#4caf50'; badgeText = `${worst}分鐘`; }
-        else if (worst <= 15) { badgeColor = '#ff9800'; badgeText = `${worst}分鐘`; }
-        else if (worst <= 30) { badgeColor = '#e65100'; badgeText = `${worst}分鐘`; }
-        else if (worst <= 60) { badgeColor = '#c62828'; badgeText = `${worst}分鐘`; }
-        else { badgeColor = '#b71c1c'; badgeText = `${worst}分鐘`; }
-      }
-
-      const isActive = activeCode === hosp.code;
-      return `
-        <div class="hosp-row${isActive ? ' active' : ''}" data-code="${hosp.code}">
-          <div class="hosp-row-top">
-            <span class="hosp-row-name">${hosp.name_tc}</span>
-            <span class="hosp-row-badge" style="background:${badgeColor}">${badgeText}</span>
-          </div>
-          <div class="hosp-row-times">
-            <span class="hosp-time-chip sort-chip" data-sort="t1">T1 <span>${t1}</span></span>
-            <span class="hosp-time-chip sort-chip" data-sort="t2">T2 <span>${t2}</span></span>
-            <span class="hosp-time-chip sort-chip" data-sort="t3">T3 <span>${t3p50}</span></span>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    // Click to zoom
-    // Row click
-    list.querySelectorAll('.hosp-row').forEach(row => {
-      row.addEventListener('click', e => {
-        // Ignore if clicking a sort chip
-        if (e.target.closest('.sort-chip')) return;
-        const code = row.dataset.code;
-        const m = markers[code];
-        if (!m) return;
-        map.flyTo(m.getLatLng(), 15, { animate: true, duration: 1 });
-        m.openPopup();
-        activeCode = code;
-        document.querySelectorAll('.hosp-row').forEach(r => r.classList.remove('active'));
-        row.classList.add('active');
-      });
-    });
-
-    // Sort chip click — sort list by that triage
-    list.querySelectorAll('.sort-chip').forEach(chip => {
-      chip.addEventListener('click', e => {
-        e.stopPropagation();
-        const key = chip.dataset.sort;
-        sortKey = key;
-        // Update sort button UI
-        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-        document.querySelector(`.sort-btn[data-sort="${key}"]`)?.classList.add('active');
-        renderHospitalList();
-      });
-    });
-  }
-  function initMap() {
-    map = L.map('map').setView([22.396, 114.274], 11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
-      maxZoom: 17
-    }).addTo(map);
-  }
-
-  // Get waiting time color
-  function getColor(t1wt, t2wt, t3p50) {
-    // T1 (危殆) is most critical, use it primarily
-    if (t1wt && t1wt !== 'N/A') {
-      const mins = parseMins(t1wt);
-      if (mins === null) return '#bdbdbd';
-      if (mins === 0) return '#4caf50';
-      if (mins <= 5) return '#8bc34a';
-      if (mins <= 15) return '#ffeb3b';
-      if (mins <= 30) return '#ff9800';
-      return '#f44336';
-    }
-    // Fall back to T2
-    if (t2wt && t2wt !== 'N/A' && !t2wt.toLowerCase().includes('less than 15')) {
-      return '#e53935';
-    }
-    // Fall back to T3
-    if (t3p50) {
-      const mins = parseMins(t3p50);
-      if (mins === null) return '#bdbdbd';
-      if (mins <= 30) return '#ff9800';
-      if (mins <= 60) return '#f44336';
-      return '#c62828';
-    }
-    return '#bdbdbd';
-  }
-
-  // Parse waiting time to minutes (handles both Chinese and English)
+  /* ── Parse minutes from API string ──────────────── */
   function parseMins(str) {
     if (!str || str === 'N/A' || str === null) return null;
     str = String(str);
-    // English: "0 minute", "1 hour 15 minutes", "less than 15 minutes"
     if (str.toLowerCase().includes('less than')) {
       const m = str.match(/less than\s*(\d+)/i);
       return m ? parseInt(m[1]) : null;
@@ -410,7 +409,6 @@
     }
     const minMatch = str.match(/(\d+)\s*minute/i);
     if (minMatch) return parseInt(minMatch[1]);
-    // Chinese fallback
     const cnHour = str.match(/(\d+(?:\.\d+)?)\s*小時/);
     if (cnHour) return Math.round(parseFloat(cnHour[1]) * 60);
     const cnMin = str.match(/(\d+)\s*分鐘/);
@@ -418,8 +416,185 @@
     return null;
   }
 
-  // Build popup content
+  /* ── Sort value array ───────────────────────────── */
+  function getSortVal(h) {
+    const t1 = parseMins(h.t1wt) ?? 99999;
+    const t2raw = h.t2wt || '';
+    const t2 = t2raw.toLowerCase().includes('less than')
+      ? parseInt(t2raw.match(/less than\s*(\d+)/i)?.[1] || '99999')
+      : (parseMins(t2raw) ?? 99999);
+    const t3 = parseMins(h.t3p50) ?? 99999;
+    const t45 = parseMins(h.t45p50) ?? 99999;
+    return [t1, t2, t3, t45];
+  }
+
+  /* ── Sort comparator ─────────────────────────────── */
+  function cmpSortVals(a, b) {
+    const tierIdx = { t1: 0, t2: 1, t3: 2, t45: 3 }[sortKey];
+    const order = [tierIdx, 0, 1, 2, 3].filter((v, i, arr) => arr.indexOf(v) === i);
+    const dir = sortDir === 'asc' ? 1 : -1;
+    for (const i of order) {
+      if (a[i] !== b[i]) return (a[i] - b[i]) * dir;
+    }
+    return 0;
+  }
+
+  /* ── Distance helper ────────────────────────────── */
+  function calcDistance(lat1, lon1, lat2, lon2) {
+    if (!userLatLng) return null;
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  /* ── Get badge color ────────────────────────────── */
+  function getBadgeColor(mins) {
+    if (mins === null) return '#bdbdbd';
+    if (mins <= 5) return '#4caf50';
+    if (mins <= 15) return '#cddc39';
+    if (mins <= 30) return '#ff9800';
+    if (mins <= 60) return '#f44336';
+    return '#b71c1c';
+  }
+
+  /* ── Get marker color (T1 based) ───────────────── */
+  function getColor(t1wt) {
+    if (!t1wt || t1wt === 'N/A') return '#bdbdbd';
+    const mins = parseMins(t1wt);
+    if (mins === null) return '#bdbdbd';
+    if (mins <= 5) return '#4caf50';
+    if (mins <= 15) return '#cddc39';
+    if (mins <= 30) return '#ff9800';
+    if (mins <= 60) return '#f44336';
+    return '#b71c1c';
+  }
+
+  /* ── Render hospital list ───────────────────────── */
+  function renderHospitalList() {
+    const list = document.getElementById('hospital-list');
+    const data = waitTimeData
+      .map(h => ({ h, sortVal: getSortVal(h.h), dist: userLatLng ? calcDistance(h.h._hosp.lat, h.h._hosp.lon, userLatLng.lat, userLatLng.lng) : null }))
+      .sort((a, b) => cmpSortVals(a.sortVal, b.sortVal));
+
+    list.innerHTML = data.map(({ h, dist }) => {
+      const hosp = h.h._hosp;
+      const t1 = h.h.t1wt || 'N/A';
+      const t2 = h.h.t2wt || 'N/A';
+      const t3p50 = h.h.t3p50 || 'N/A';
+      const t1mins = parseMins(t1);
+      const t2mins = parseMins(t2);
+      const t3mins = parseMins(t3p50);
+
+      const vals = [t1mins, t2mins, t3mins].filter(v => v !== null);
+      const worst = vals.length > 0 ? Math.max(...vals) : null;
+      const badgeColor = getBadgeColor(worst);
+      const badgeText = worst !== null ? `${worst}分` : 'N/A';
+      const isActive = activeCode === hosp.code;
+      const isImminent = worst !== null && worst <= 5;
+
+      const dirLabel = sortDir === 'asc' ? '短→長' : '長→短';
+      const activeBtn = document.querySelector('.sort-btn.active');
+      const activeSort = activeBtn ? activeBtn.dataset.sort : 't1';
+      const tierIdx = { t1: 0, t2: 1, t3: 2, t45: 3 }[activeSort];
+
+      const distStr = dist !== null
+        ? (dist < 1 ? `${Math.round(dist*1000)}m` : `${dist.toFixed(1)}km`)
+        : '';
+
+      return `
+        <div class="hosp-row${isActive ? ' active' : ''}" data-code="${hosp.code}">
+          <div class="hosp-row-top">
+            <span class="hosp-row-name">${hosp.name_tc}</span>
+            <span class="hosp-row-badge ${isImminent ? 'badge-imminent' : ''}" style="background:${badgeColor}">${badgeText}</span>
+          </div>
+          ${distStr ? `<div class="hosp-row-dist">📍 ${distStr}</div>` : ''}
+          <div class="hosp-row-times">
+            <span class="hosp-time-chip"><span class="t1-label">T1</span> <span>${t1}</span></span>
+            <span class="hosp-time-chip"><span class="t2-label">T2</span> <span>${t2}</span></span>
+            <span class="hosp-time-chip"><span class="t3-label">T3</span> <span>${t3p50}</span></span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Row click → fly to marker
+    list.querySelectorAll('.hosp-row').forEach(row => {
+      row.addEventListener('click', e => {
+        const code = row.dataset.code;
+        const m = markers[code];
+        if (!m) return;
+        map.flyTo(m.getLatLng(), 15, { animate: true, duration: 0.8 });
+        setTimeout(() => m.openPopup(), 400);
+        activeCode = code;
+        document.querySelectorAll('.hosp-row').forEach(r => r.classList.remove('active'));
+        row.classList.add('active');
+      });
+    });
+  }
+
+  /* ── Update sort button UI ─────────────────────── */
+  function updateSortButtons() {
+    document.querySelectorAll('.sort-btn').forEach(b => {
+      const isActive = b.dataset.sort === sortKey;
+      b.classList.toggle('active', isActive);
+      const dirEl = b.querySelector('.dir');
+      if (dirEl) dirEl.textContent = sortDir === 'asc' ? '▲' : '▼';
+    });
+  }
+
+  /* ── Sort button listeners ─────────────────────── */
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.sort;
+      if (key === sortKey) {
+        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortKey = key;
+        sortDir = 'asc';
+      }
+      updateSortButtons();
+      renderHospitalList();
+    });
+  });
+
+  /* ── Panel toggle ──────────────────────────────── */
+  function togglePanel() {
+    const panel = document.getElementById('side-panel');
+    const btn = document.getElementById('panel-toggle');
+    panel.classList.toggle('hidden-panel');
+    btn.classList.toggle('shifted');
+    btn.textContent = panel.classList.contains('hidden-panel') ? '▶' : '◀';
+  }
+
+  /* ── Snackbar ──────────────────────────────────── */
+  function showSnackbar(msg, isError) {
+    const sb = document.getElementById('snackbar');
+    sb.textContent = msg;
+    sb.className = 'show' + (isError ? ' error' : '');
+    clearTimeout(sb._timer);
+    sb._timer = setTimeout(() => sb.classList.remove('show'), 4000);
+  }
+
+  /* ── Init map ──────────────────────────────────── */
+  function initMap() {
+    map = L.map('map', { zoomControl: true }).setView([22.396, 114.274], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 17
+    }).addTo(map);
+
+    map.on('popupopen', e => {
+      const content = e.popup.getContent();
+      const match = content.match(/data-code="([^"]+)"/);
+      if (match) activeCode = match[1];
+    });
+  }
+
+  /* ── Build popup content ───────────────────────── */
   function buildPopup(h) {
+    const hosp = h._hosp;
     const t1 = h.t1wt || 'N/A';
     const t2 = h.t2wt || 'N/A';
     const t3p50 = h.t3p50 || 'N/A';
@@ -436,52 +611,56 @@
     const t3color = t3mins === null ? 'gray' : t3mins <= 30 ? 'yellow' : t3mins <= 60 ? 'orange' : 'red';
     const t45color = t45mins === null ? 'gray' : t45mins <= 60 ? 'yellow' : t45mins <= 120 ? 'orange' : 'red';
 
+    const updateStr = lastUpdatedMs
+      ? new Date(lastUpdatedMs).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      : '即時';
+
+    const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${hosp.lat},${hosp.lon}`;
+
     return `
-      <div class="popup-header">${h._hosp.name_tc}</div>
-      <div class="popup-sub">${h._hosp.name_en}</div>
-      <table class="popup-table">
-        <tr><th colspan="2">病人類別</th><th>最長輪候</th><th>等候時間</th></tr>
-        <tr>
-          <td style="background:#c62828;width:4px;padding:0;"></td>
-          <td class="triage-col">危殆 (T1)</td>
-          <td class="time-col ${t1color}">${t1}</td>
-        </tr>
-        <tr>
-          <td style="background:#e53935;width:4px;padding:0;"></td>
-          <td class="triage-col">危急 (T2)</td>
-          <td class="time-col ${t2color}">${t2}</td>
-        </tr>
-        <tr>
-          <td style="background:#ff9800;width:4px;padding:0;"></td>
-          <td class="triage-col">緊急 (T3) 中位數</td>
-          <td class="time-col ${t3color}">${t3p50}</td>
-        </tr>
-        <tr>
-          <td style="background:#f44336;width:4px;padding:0;"></td>
-          <td class="triage-col">次緊急/非緊急 (T4/5) 中位數</td>
-          <td class="time-col ${t45color}">${t45p50}</td>
-        </tr>
-      </table>
-      <div style="font-size:0.7rem;color:#888;margin-top:6px;">
-        📊 緊急(75th): ${t3p95} | 次緊急(75th): ${t45p95}
-      </div>
-      <div style="font-size:0.7rem;color:#aaa;margin-top:4px;">
-        🕐 即時更新
+      <div data-code="${hosp.code}">
+        <div class="popup-header">${hosp.name_tc}</div>
+        <div class="popup-sub">${hosp.name_en}</div>
+        <table class="popup-table">
+          <tr><th colspan="2">病人類別</th><th>最長輪候</th></tr>
+          <tr>
+            <td style="background:#c62828;width:4px;padding:0;"></td>
+            <td class="triage-col">T1 危殆</td>
+            <td class="time-col ${t1color}">${t1}</td>
+          </tr>
+          <tr>
+            <td style="background:#e53935;width:4px;padding:0;"></td>
+            <td class="triage-col">T2 危急</td>
+            <td class="time-col ${t2color}">${t2}</td>
+          </tr>
+          <tr>
+            <td style="background:#ff9800;width:4px;padding:0;"></td>
+            <td class="triage-col">T3 緊急（中位）</td>
+            <td class="time-col ${t3color}">${t3p50}</td>
+          </tr>
+          <tr>
+            <td style="background:#f44336;width:4px;padding:0;"></td>
+            <td class="triage-col">T4/5 非緊急（中位）</td>
+            <td class="time-col ${t45color}">${t45p50}</td>
+          </tr>
+        </table>
+        <div class="popup-extra">📊 T3 75th: ${t3p95} | T4/5 75th: ${t45p95}</div>
+        <div class="popup-actions">
+          <a class="popup-link" href="${hosp.link_tc}" target="_blank" rel="noopener">HA 官網</a>
+          <a class="popup-nav" href="${navUrl}" target="_blank" rel="noopener">📍 導航</a>
+        </div>
+        <div class="popup-update">🕐 更新: ${updateStr}${dataStale ? ' ⚠️' : ''}</div>
       </div>
     `;
   }
 
-  // Create or update marker
+  /* ── Update/create marker ──────────────────────── */
   function updateMarker(h) {
     const hosp = h._hosp;
     const lat = hosp.lat;
     const lon = hosp.lon;
     const t1wt = h.t1wt || 'N/A';
-    const t2wt = h.t2wt || 'N/A';
-    const t3p50 = h.t3p50 || 'N/A';
-    const color = getColor(t1wt, t2wt, t3p50);
-
-    // Short label (first 2 chars of TC name)
+    const color = getColor(t1wt);
     const label = hosp.name_tc.substring(0, 2);
 
     const icon = L.divIcon({
@@ -495,6 +674,7 @@
         box-shadow:0 2px 8px rgba(0,0,0,0.3);
         color:white;font-weight:bold;font-size:11px;
         cursor:pointer;
+        transition:background 0.4s ease;
       ">${label}</div>`,
       iconSize: [34, 34],
       iconAnchor: [17, 17]
@@ -511,64 +691,102 @@
     }
   }
 
-  // Fetch data from HA API + hospitals.json, merge and update map
+  /* ── Fetch data ───────────────────────────────── */
   async function fetchData() {
+    const mapEl = document.getElementById('map');
+    mapEl.classList.add('map-refreshing');
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const [haResp, hospResp] = await Promise.all([
-        fetch(API_URL),
+        fetch(API_URL, { signal: controller.signal }),
         fetch(HOSPITALS_URL)
       ]);
+      clearTimeout(timeoutId);
+
+      if (!haResp.ok) throw new Error(`HA API HTTP ${haResp.status}`);
+      if (!hospResp.ok) throw new Error(`Hospitals JSON HTTP ${hospResp.status}`);
+
       const haJson = await haResp.json();
       const hospJson = await hospResp.json();
 
-      // Build hospital lookup by name_en (handle alias mismatches)
+      // Build lookup
       hospMap = {};
       hospJson.forEach(h => {
         hospMap[h.name_en] = h;
         hospMap[h.name_tc] = h;
       });
-      // Alias for St. John / St John mismatch
       hospJson.forEach(h => {
-        if (h.name_en === 'St. John Hospital') {
-          hospMap['St John Hospital'] = h;
-        }
-        // Normalize "Hospital" -> "Hosp" for API name lookup (API: "X Hospital", json: "X Hosp")
+        if (h.name_en === 'St. John Hospital') hospMap['St John Hospital'] = h;
         const apiForm = h.name_en.replace(/Hosp$/, 'Hospital');
         if (apiForm !== h.name_en) hospMap[apiForm] = h;
       });
 
-      // Update time display
+      // Update timestamp
       const t = haJson.updateTime || '';
       document.getElementById('update-time').textContent = t;
+      lastUpdatedMs = Date.now();
+      dataStale = false;
+      document.getElementById('last-updated').textContent = `上次更新 ${new Date().toLocaleTimeString('zh-HK', {hour:'2-digit',minute:'2-digit'})}`;
+      document.getElementById('last-updated').style.opacity = '0.75';
 
-      // Merge HA data with hospital coords, then update markers
+      // Merge and update
       waitTimeData = [];
       haJson.waitTime.forEach(hosp => {
         const match = hospMap[hosp.hospName];
         if (match) {
           const merged = { ...hosp, _hosp: match };
-          waitTimeData.push(merged);
+          waitTimeData.push({ h: merged });
           updateMarker(merged);
         }
       });
 
       renderHospitalList();
-
-      // Hide loading
       document.getElementById('loading').classList.add('hide');
+      if (dataStale) {
+        dataStale = false;
+        showSnackbar('✅ 數據已更新');
+      }
     } catch (err) {
-      console.error('Fetch error:', err);
+      console.warn('Fetch error:', err.message);
+      dataStale = true;
+      if (waitTimeData.length === 0) {
+        showSnackbar('⚠️ 無法獲取數據，請檢查網絡', true);
+      } else {
+        showSnackbar('⚠️ 更新失敗，顯示上次數據', true);
+        document.getElementById('last-updated').textContent = '上次更新 (可能過時)';
+        document.getElementById('last-updated').style.opacity = '0.5';
+      }
+    } finally {
+      mapEl.classList.remove('map-refreshing');
+      const btn = document.getElementById('refresh-btn');
+      btn.classList.remove('loading');
     }
   }
 
-  // Countdown timer
+  /* ── Manual refresh ───────────────────────────── */
+  function manualRefresh() {
+    const btn = document.getElementById('refresh-btn');
+    if (btn.classList.contains('loading')) return;
+    btn.classList.add('loading');
+    countdown = REFRESH_INTERVAL;
+    fetchData();
+  }
+
+  /* ── Countdown timer ───────────────────────────── */
   function startCountdown() {
     if (countdownTimer) clearInterval(countdownTimer);
     countdown = REFRESH_INTERVAL;
     countdownTimer = setInterval(() => {
       countdown--;
       const el = document.getElementById('countdown');
-      if (el) el.textContent = `下次更新：${countdown}秒`;
+      if (el) {
+        el.textContent = countdown <= 5
+          ? `⏰ ${countdown}秒`
+          : `自動更新 ${countdown}秒`;
+        el.classList.toggle('countdown-warn', countdown <= 5);
+      }
       if (countdown <= 0) {
         fetchData();
         countdown = REFRESH_INTERVAL;
@@ -576,20 +794,26 @@
     }, 1000);
   }
 
-  // Init
+  /* ── Try geolocation ──────────────────────────── */
+  function tryGeolocation() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        userLatLng = L.latLng(pos.coords.latitude, pos.coords.longitude);
+        renderHospitalList();
+      },
+      () => {} // silent fail
+    );
+  }
+
+  /* ── Init ─────────────────────────────────────── */
   initMap();
   fetchData();
   startCountdown();
+  tryGeolocation();
 
-  // Sort button listeners
-  document.querySelectorAll('.sort-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      sortKey = btn.dataset.sort;
-      renderHospitalList();
-    });
-  });
+  // Panel toggle button
+  document.getElementById('panel-toggle').addEventListener('click', togglePanel);
 </script>
 </body>
 </html>
