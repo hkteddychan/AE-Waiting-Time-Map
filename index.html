@@ -149,19 +149,12 @@
       font-size: 0.7rem;
       min-width: 150px;
       max-width: 170px;
-      transition: opacity 0.25s ease, transform 0.25s ease;
     }
-    #legend.hidden-legend { opacity: 0; pointer-events: none; transform: translateY(-6px); }
-    #legend h4 { margin-bottom: 6px; font-size: 0.75rem; color: #333; display: flex; align-items: center; justify-content: space-between; }
+    #legend h4 { margin-bottom: 6px; font-size: 0.75rem; color: #333; }
     .legend-item { display: flex; align-items: center; gap: 7px; margin: 3px 0; }
     .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.8); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
     .legend-threshold { font-size: 0.62rem; color: #888; margin-top: 6px; padding-top: 5px; border-top: 1px solid #eee; line-height: 1.5; }
     .legend-threshold div { margin: 1px 0; }
-    #legend-toggle {
-      background: none; border: none; cursor: pointer; font-size: 0.7rem;
-      color: #999; padding: 0; line-height: 1;
-    }
-    #legend-toggle:hover { color: #c62828; }
 
     /* ── Info Panel (mini tooltip) ───────────────── */
     #info-panel {
@@ -273,7 +266,7 @@
       #side-panel.hidden-panel ~ #panel-toggle { bottom: 8px; }
 
       #legend {
-        top: 68px; left: auto; right: 8px;
+        top: 10px; left: 10px;
         bottom: auto;
         min-width: 140px;
         font-size: 0.68rem;
@@ -350,7 +343,7 @@
 <div id="map"></div>
 
 <div id="legend">
-  <h4>👇 顏色圖例 <button id="legend-toggle" onclick="toggleLegend()" title="隱藏圖例">✕</button></h4>
+  <h4>👇 顏色圖例</h4>
   <div class="legend-item"><div class="legend-dot" style="background:#4caf50"></div> 0–5 分鐘（最快）</div>
   <div class="legend-item"><div class="legend-dot" style="background:#cddc39"></div> 6–15 分鐘</div>
   <div class="legend-item"><div class="legend-dot" style="background:#ff9800"></div> 16–30 分鐘</div>
@@ -496,6 +489,27 @@
     return '#b71c1c';
   }
 
+  /* ── Format minutes to human-readable string ──────── */
+  function formatTime(mins) {
+    if (mins === null || mins === 99999 || mins === 88888) return null;
+    if (mins < 60) return `${mins}分鐘`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m > 0 ? `${h}小時${m}分鐘` : `${h}小時`;
+  }
+
+  /* ── Format raw API wait time string to human-readable ── */
+  function fmtApiTime(str) {
+    if (!str || str === 'N/A') return 'N/A';
+    const mins = parseMins(str);
+    if (mins === null) {
+      // "Managing..." or other non-numeric strings
+      if (str.toLowerCase().includes('managing')) return '搶救中';
+      return str;
+    }
+    return formatTime(mins) || str;
+  }
+
   /* ── Render hospital list ───────────────────────── */
   function renderHospitalList() {
     const list = document.getElementById('hospital-list');
@@ -525,7 +539,7 @@
       } else if (badgeMins === 99999 || badgeMins === null) {
         badgeText = 'N/A';
       } else {
-        badgeText = `${badgeMins}分`;
+        badgeText = formatTime(badgeMins) || `${badgeMins}分`;
       }
 
       const badgeColor = (badgeMins === 88888 || badgeMins === 99999 || badgeMins === null) ? '#bdbdbd' : getBadgeColor(badgeMins);
@@ -548,9 +562,9 @@
           </div>
           ${distStr ? `<div class="hosp-row-dist">📍 ${distStr}</div>` : ''}
           <div class="hosp-row-times">
-            <span class="hosp-time-chip"><span class="t1-label">T1</span> <span>${t1}</span></span>
-            <span class="hosp-time-chip"><span class="t2-label">T2</span> <span>${t2}</span></span>
-            <span class="hosp-time-chip"><span class="t3-label">T3</span> <span>${t3p50}</span></span>
+            <span class="hosp-time-chip"><span class="t1-label">T1</span> <span>${fmtApiTime(t1)}</span></span>
+            <span class="hosp-time-chip"><span class="t2-label">T2</span> <span>${fmtApiTime(t2)}</span></span>
+            <span class="hosp-time-chip"><span class="t3-label">T3</span> <span>${fmtApiTime(t3p50)}</span></span>
           </div>
         </div>
       `;
@@ -603,15 +617,6 @@
     panel.classList.toggle('hidden-panel');
     btn.classList.toggle('shifted');
     btn.textContent = panel.classList.contains('hidden-panel') ? '▶' : '◀';
-  }
-
-  /* ── Legend toggle ────────────────────────────── */
-  function toggleLegend() {
-    const legend = document.getElementById('legend');
-    const btn = document.getElementById('legend-toggle');
-    const isHidden = legend.classList.toggle('hidden-legend');
-    btn.textContent = isHidden ? '▶' : '✕';
-    btn.title = isHidden ? '顯示圖例' : '隱藏圖例';
   }
 
   /* ── Snackbar ──────────────────────────────────── */
@@ -672,25 +677,25 @@
           <tr>
             <td style="background:#c62828;width:4px;padding:0;"></td>
             <td class="triage-col">T1 危殆</td>
-            <td class="time-col ${t1color}">${t1}</td>
+            <td class="time-col ${t1color}">${fmtApiTime(t1)}</td>
           </tr>
           <tr>
             <td style="background:#e53935;width:4px;padding:0;"></td>
             <td class="triage-col">T2 危急</td>
-            <td class="time-col ${t2color}">${t2}</td>
+            <td class="time-col ${t2color}">${fmtApiTime(t2)}</td>
           </tr>
           <tr>
             <td style="background:#ff9800;width:4px;padding:0;"></td>
             <td class="triage-col">T3 緊急（中位）</td>
-            <td class="time-col ${t3color}">${t3p50}</td>
+            <td class="time-col ${t3color}">${fmtApiTime(t3p50)}</td>
           </tr>
           <tr>
             <td style="background:#f44336;width:4px;padding:0;"></td>
             <td class="triage-col">T4/5 非緊急（中位）</td>
-            <td class="time-col ${t45color}">${t45p50}</td>
+            <td class="time-col ${t45color}">${fmtApiTime(t45p50)}</td>
           </tr>
         </table>
-        <div class="popup-extra">📊 T3 75th: ${t3p95} | T4/5 75th: ${t45p95}</div>
+        <div class="popup-extra">📊 T3 75th: ${fmtApiTime(t3p95)} | T4/5 75th: ${fmtApiTime(t45p95)}</div>
         <div class="popup-actions">
           <a class="popup-link" href="${hosp.link_tc}" target="_blank" rel="noopener">HA 官網</a>
           <a class="popup-nav" href="${navUrl}" target="_blank" rel="noopener">📍 導航</a>
