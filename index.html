@@ -424,11 +424,23 @@
 
   /* ── Sort value array ───────────────────────────── */
   function getSortVal(h) {
-    const t1 = parseMins(h.t1wt) ?? 99999;
+    // T1: "Managing multiple resuscitation cases" → 88888 (特殊狀態，非正常等待)
+    const t1raw = h.t1wt || '';
+    const t1 = t1raw.toLowerCase().includes('managing multiple resuscitation')
+      ? 88888
+      : (parseMins(t1raw) ?? 99999);
+
+    // T2: special handling for "Managing..." vs "less than X minutes"
     const t2raw = h.t2wt || '';
-    const t2 = t2raw.toLowerCase().includes('less than')
-      ? parseInt(t2raw.match(/less than\s*(\d+)/i)?.[1] || '99999')
-      : (parseMins(t2raw) ?? 99999);
+    let t2;
+    if (t2raw.toLowerCase().includes('less than')) {
+      t2 = parseInt(t2raw.match(/less than\s*(\d+)/i)?.[1] || '99999');
+    } else if (t2raw.toLowerCase().includes('managing multiple resuscitation')) {
+      t2 = 88888;
+    } else {
+      t2 = parseMins(t2raw) ?? 99999;
+    }
+
     const t3 = parseMins(h.t3p50) ?? 99999;
     const t45 = parseMins(h.t45p50) ?? 99999;
     return [t1, t2, t3, t45];
@@ -437,12 +449,19 @@
   /* ── Sort comparator ─────────────────────────────── */
   function cmpSortVals(a, b) {
     const tierIdx = { t1: 0, t2: 1, t3: 2, t45: 3 }[sortKey];
-    const order = [tierIdx, 0, 1, 2, 3].filter((v, i, arr) => arr.indexOf(v) === i);
     const dir = sortDir === 'asc' ? 1 : -1;
-    for (const i of order) {
-      if (a[i] !== b[i]) return (a[i] - b[i]) * dir;
-    }
-    return 0;
+
+    // Sentinel 99999 (null/unavailable) — always last regardless of direction
+    if (a[tierIdx] === 99999 && b[tierIdx] !== 99999) return 1;
+    if (b[tierIdx] === 99999 && a[tierIdx] !== 99999) return -1;
+
+    // Sentinel 88888 ("Managing...") — second-to-last, only above 99999
+    if (a[tierIdx] === 88888 && b[tierIdx] !== 88888 && b[tierIdx] !== 99999) return 1;
+    if (b[tierIdx] === 88888 && a[tierIdx] !== 88888 && a[tierIdx] !== 99999) return -1;
+
+    // Normal comparison
+    if (a[tierIdx] !== b[tierIdx]) return (a[tierIdx] - b[tierIdx]) * dir;
+    return 0; // No fallback to other tiers — pure single-tier sort
   }
 
   /* ── Distance helper ────────────────────────────── */
@@ -492,13 +511,26 @@
       const t1mins = parseMins(t1);
       const t2mins = parseMins(t2);
       const t3mins = parseMins(t3p50);
+      const t45mins = parseMins(h.h.t45p50);
 
-      const vals = [t1mins, t2mins, t3mins].filter(v => v !== null);
-      const worst = vals.length > 0 ? Math.max(...vals) : null;
-      const badgeColor = getBadgeColor(worst);
-      const badgeText = worst !== null ? `${worst}分` : 'N/A';
+      // Badge: show value for current sort dimension (not max of T1/T2/T3)
+      const tierIdx = { t1: 0, t2: 1, t3: 2, t45: 3 }[sortKey];
+      const sortValArr = getSortVal(h.h);
+      const badgeMins = sortValArr[tierIdx];
+
+      // Handle special sentinel values
+      let badgeText;
+      if (badgeMins === 88888) {
+        badgeText = '搶救中';
+      } else if (badgeMins === 99999 || badgeMins === null) {
+        badgeText = 'N/A';
+      } else {
+        badgeText = `${badgeMins}分`;
+      }
+
+      const badgeColor = (badgeMins === 88888 || badgeMins === 99999 || badgeMins === null) ? '#bdbdbd' : getBadgeColor(badgeMins);
       const isActive = activeCode === hosp.code;
-      const isImminent = worst !== null && worst <= 5;
+      const isImminent = badgeMins !== null && badgeMins !== 88888 && badgeMins !== 99999 && badgeMins <= 5;
 
       const dirLabel = sortDir === 'asc' ? '短→長' : '長→短';
       const activeBtn = document.querySelector('.sort-btn.active');
