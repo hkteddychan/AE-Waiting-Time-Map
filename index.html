@@ -535,7 +535,6 @@
       const dirLabel = sortDir === 'asc' ? '短→長' : '長→短';
       const activeBtn = document.querySelector('.sort-btn.active');
       const activeSort = activeBtn ? activeBtn.dataset.sort : 't1';
-      const tierIdx = { t1: 0, t2: 1, t3: 2, t45: 3 }[activeSort];
 
       const distStr = dist !== null
         ? (dist < 1 ? `${Math.round(dist*1000)}m` : `${dist.toFixed(1)}km`)
