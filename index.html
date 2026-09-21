@@ -2,7 +2,15 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#c62828">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="急症輪候">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <title>香港急症室輪候時間｜Live</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -295,6 +303,78 @@
 
     /* ── Countdown warning ───────────────────────── */
     .countdown-warn { color: #ff6b6b !important; font-weight: bold; }
+
+    /* ── Peak-hour hint banner ───────────────────── */
+    #peak-hint {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      background: #fff3e0; border: 1.5px solid #ff9800; color: #b45309;
+      padding: 6px 14px; border-radius: 20px; z-index: 998;
+      font-size: 0.72rem; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      display: none; white-space: nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis;
+    }
+    #peak-hint.show { display: block; }
+
+    /* ── Offline banner ─────────────────────────── */
+    #offline-banner {
+      position: absolute; top: 44px; left: 50%; transform: translateX(-50%);
+      background: #424242; color: #fff; padding: 4px 14px; border-radius: 16px;
+      z-index: 998; font-size: 0.7rem; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      display: none;
+    }
+    #offline-banner.show { display: block; }
+
+    /* ── Compare bar & modal ────────────────────── */
+    #compare-bar {
+      position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+      background: #c62828; color: white; padding: 8px 16px; border-radius: 24px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.3); z-index: 1002; cursor: pointer;
+      font-size: 0.78rem; font-weight: 700; display: none; align-items: center; gap: 8px;
+      border: none;
+    }
+    #compare-bar.show { display: flex; }
+    #compare-bar:hover { background: #b71c1c; }
+    .hosp-compare-btn {
+      margin-left: 4px; background: rgba(255,255,255,0.25); border: 1.5px solid rgba(255,255,255,0.6);
+      color: white; width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
+      font-size: 0.75rem; line-height: 1; flex-shrink: 0; padding: 0;
+    }
+    .hosp-compare-btn.added { background: #4caf50; border-color: #fff; }
+    #compare-modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3000;
+      display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    #compare-modal-overlay.show { display: flex; }
+    #compare-modal {
+      background: white; border-radius: 16px; max-width: 680px; width: 100%;
+      max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+    #compare-modal-header {
+      position: sticky; top: 0; background: #c62828; color: white; padding: 12px 16px;
+      display: flex; justify-content: space-between; align-items: center; border-radius: 16px 16px 0 0;
+    }
+    #compare-modal-header h3 { font-size: 0.95rem; }
+    #compare-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 50%; font-size: 1rem; cursor: pointer; }
+    #compare-body { padding: 14px 16px; }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+    .compare-table th { background: #f5f5f5; padding: 8px 6px; color: #555; font-size: 0.7rem; position: sticky; top: 0; }
+    .compare-table td { padding: 7px 6px; border-bottom: 1px solid #eee; text-align: center; }
+    .compare-table td.hosp-name { text-align: left; font-weight: 600; color: #333; white-space: nowrap; }
+    .compare-table .trhead { background: #fff8f8; color: #c62828; font-weight: 700; }
+    .c-green { color: #2e7d32; font-weight: 700; } .c-yellow { color: #b77a00; font-weight: 700; }
+    .c-orange { color: #e65100; font-weight: 700; } .c-red { color: #c62828; font-weight: 700; } .c-gray { color: #9e9e9e; }
+
+    /* ── Trend sparkline ────────────────────────── */
+    .trend-block { margin-top: 8px; }
+    .trend-block h5 { font-size: 0.7rem; color: #999; margin-bottom: 4px; font-weight: 600; }
+    .sparkline { width: 100%; height: 40px; display: block; }
+    .trend-meta { font-size: 0.62rem; color: #bbb; margin-top: 2px; }
+    .trend-empty { font-size: 0.65rem; color: #aaa; font-style: italic; }
+
+    @media (max-width: 768px) {
+      #peak-hint { top: 8px; font-size: 0.65rem; padding: 5px 10px; }
+      #compare-modal { max-height: 90vh; }
+      .compare-table { font-size: 0.68rem; }
+    }
   </style>
 </head>
 <body>
@@ -366,6 +446,17 @@
 
 <div id="snackbar"></div>
 
+<div id="peak-hint"></div>
+<div id="offline-banner">📴 離線模式 — 顯示上次數據</div>
+<button id="compare-bar" class="hidden">⚖️ 對比醫院 <span id="compare-count"></span> →</button>
+
+<div id="compare-modal-overlay">
+  <div id="compare-modal">
+    <div id="compare-modal-header"><h3>⚖️ 多醫院輪候對比</h3><button id="compare-close">✕</button></div>
+    <div id="compare-body"></div>
+  </div>
+</div>
+
 <script>
   /* ── Config ─────────────────────────────────────── */
   const API_URL = 'https://www.ha.org.hk/opendata/aed/aedwtdata2-en.json';
@@ -383,6 +474,15 @@
   let lastUpdatedMs = null;
   let dataStale = false;
   let userLatLng = null;
+
+  /* ── 歷史趨勢 / 對比 狀態 ─────────────────────── */
+  const HISTORY_KEY = 'ae_wait_history_v1';
+  const COMPARE_KEY = 'ae_compare_v1';
+  const HISTORY_MAX_AGE = 24 * 3600 * 1000;   // 保留 24 小時
+  const HISTORY_MAX_ENTRIES = 240;            // 最多存 240 個時間點(約每6分鐘一筆做趨勢)
+  let waitHistory = loadHistory();
+  let compareSet = loadCompare();
+  let lastHistoryRecord = 0;
 
   /* ── Triage labels ──────────────────────────────── */
   const TRIAGE_LABELS = {
@@ -559,6 +659,7 @@
           <div class="hosp-row-top">
             <span class="hosp-row-name">${hosp.name_tc}</span>
             <span class="hosp-row-badge ${isImminent ? 'badge-imminent' : ''}" style="background:${badgeColor}">${badgeText}</span>
+            <button class="hosp-compare-btn${compareSet.has(hosp.code) ? ' added' : ''}" data-code="${hosp.code}" data-name="${hosp.name_tc}" title="加入對比">+</button>
           </div>
           ${distStr ? `<div class="hosp-row-dist">📍 ${distStr}</div>` : ''}
           <div class="hosp-row-times">
@@ -581,6 +682,14 @@
         activeCode = code;
         document.querySelectorAll('.hosp-row').forEach(r => r.classList.remove('active'));
         row.classList.add('active');
+      });
+    });
+
+    // Compare button (加入對比)
+    list.querySelectorAll('.hosp-compare-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        toggleCompare(btn.dataset.code, btn.dataset.name, btn);
       });
     });
   }
@@ -639,7 +748,26 @@
     map.on('popupopen', e => {
       const content = e.popup.getContent();
       const match = content.match(/data-code="([^"]+)"/);
-      if (match) activeCode = match[1];
+      if (match) {
+        activeCode = match[1];
+        // 渲染趨勢 sparkline
+        const code = match[1];
+        const cvs = document.getElementById(`trend-${code}`);
+        const meta = document.getElementById(`trend-meta-${code}`);
+        if (cvs) {
+          const series = getTrendSeries(code, 't3');
+          renderSparkline(cvs, code, 't3', '#c62828');
+          if (meta) {
+            if (series.length >= 2) {
+              const first = new Date(series[0].t);
+              const last = new Date(series[series.length - 1].t);
+              meta.textContent = `${series.length} 筆 · ${first.getHours()}:${String(first.getMinutes()).padStart(2,'0')} – ${last.getHours()}:${String(last.getMinutes()).padStart(2,'0')}`;
+            } else {
+              meta.textContent = '趨勢需持續使用後累積';
+            }
+          }
+        }
+      }
     });
   }
 
@@ -701,6 +829,11 @@
           <a class="popup-nav" href="${navUrl}" target="_blank" rel="noopener">📍 導航</a>
         </div>
         <div class="popup-update">🕐 更新: ${updateStr}${dataStale ? ' ⚠️' : ''}</div>
+        <div class="trend-block">
+          <h5>📈 輪候趨勢（T3 中位 · 過去數小時）</h5>
+          <canvas class="sparkline" id="trend-${hosp.code}" width="280" height="40"></canvas>
+          <div class="trend-meta" id="trend-meta-${hosp.code}">本機累積數據</div>
+        </div>
       </div>
     `;
   }
@@ -799,6 +932,8 @@
         dataStale = false;
         showSnackbar('✅ 數據已更新');
       }
+      // 記錄歷史快照(供趨勢)
+      recordHistory(waitTimeData);
     } catch (err) {
       console.warn('Fetch error:', err.message);
       dataStale = true;
@@ -857,6 +992,165 @@
     );
   }
 
+  /* ── 歷史趨勢 / 對比 / 高峰期 ─────────────────── */
+  function loadHistory() {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return [];
+      // 過濾過期
+      const now = Date.now();
+      return arr.filter(e => (now - e.ts) < HISTORY_MAX_AGE);
+    } catch (e) { return []; }
+  }
+  function persistHistory() {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(waitHistory)); } catch (e) {}
+  }
+  function loadCompare() {
+    try {
+      const raw = localStorage.getItem(COMPARE_KEY);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch (e) { return new Set(); }
+  }
+  function persistCompare() {
+    try { localStorage.setItem(COMPARE_KEY, JSON.stringify([...compareSet])); } catch (e) {}
+  }
+
+  // 每次成功抓取時記錄快照(限頻: 至少相隔 4 分鐘, 避免 localStorage 過大)
+  function recordHistory(data) {
+    const now = Date.now();
+    if (now - lastHistoryRecord < 240000) return;
+    lastHistoryRecord = now;
+    const snap = { ts: now, d: {} };
+    data.forEach(h => {
+      const hosp = h._hosp || (h.h && h.h._hosp);
+      if (!hosp) return;
+      snap.d[hosp.code] = { t1: parseMins(h.t1wt), t2: parseMins(h.t2wt), t3: parseMins(h.t3p50), t45: parseMins(h.t45p50) };
+    });
+    waitHistory.push(snap);
+    if (waitHistory.length > HISTORY_MAX_ENTRIES) waitHistory = waitHistory.slice(-HISTORY_MAX_ENTRIES);
+    persistHistory();
+  }
+
+  // 取得某醫院某分流類別的時間序列(分鐘)
+  function getTrendSeries(code, tier) {
+    const series = [];
+    for (const e of waitHistory) {
+      const v = e.d[code];
+      if (v && v[tier] != null && v[tier] !== 99999 && v[tier] !== 88888) {
+        series.push({ t: e.ts, v: v[tier] });
+      }
+    }
+    return series;
+  }
+
+  // 畫 sparkline
+  function renderSparkline(canvas, code, tier, color) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const series = getTrendSeries(code, tier);
+    if (series.length < 2) {
+      ctx.fillStyle = '#bbb';
+      ctx.font = '10px sans-serif';
+      ctx.fillText(series.length === 1 ? '1 筆記錄' : '暫無歷史', 4, h - 6);
+      return;
+    }
+    const vals = series.map(s => s.v);
+    const max = Math.max(...vals, 1);
+    const pad = 3;
+    const step = (w - pad * 2) / (series.length - 1);
+    ctx.strokeStyle = color || '#c62828';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    series.forEach((s, i) => {
+      const x = pad + i * step;
+      const y = h - pad - (s.v / max) * (h - pad * 2);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    // 點標記最後一點
+    const last = series[series.length - 1];
+    const lx = pad + (series.length - 1) * step;
+    const ly = h - pad - (last.v / max) * (h - pad * 2);
+    ctx.fillStyle = color || '#c62828';
+    ctx.beginPath(); ctx.arc(lx, ly, 2.5, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // 高峰時段提示
+  function updatePeakHint() {
+    const el = document.getElementById('peak-hint');
+    const d = new Date();
+    const h = d.getHours();
+    const day = d.getDay(); // 0=Sun
+    const isWeekend = day === 0 || day === 6;
+    let msg = '';
+    if (h >= 18 && h < 23) msg = '🌙 晚間高峰時段 — 非緊急輪候或較長';
+    else if (isWeekend && h >= 9 && h < 22) msg = '📅 週末門診休診 — 急症室較繁忙';
+    else if (h >= 0 && h < 6) msg = '🌌 深宵時段 — 深夜就診人數較少';
+    else if (h >= 11 && h < 14) msg = '🍱 午間時段 — 非緊急候診或有上升';
+    el.className = msg ? 'show' : '';
+    el.textContent = msg;
+  }
+
+  // 對比: 開啟/關閉 modal
+  function openCompare() {
+    const overlay = document.getElementById('compare-modal-overlay');
+    const body = document.getElementById('compare-body');
+    if (compareSet.size === 0) { showSnackbar('請先在清單按「+」加入要對比的醫院', true); return; }
+    const codes = [...compareSet];
+    const rows = codes.map(code => waitTimeData.find(x => x.h._hosp.code === code)).filter(Boolean);
+    if (rows.length === 0) { showSnackbar('暫無對比資料', true); return; }
+    const headers = rows.map(r => `<th>${r.h._hosp.name_tc}</th>`).join('');
+    const tiers = [
+      { key: 't1', label: 'T1 危殆', get: r => r.h.t1wt },
+      { key: 't2', label: 'T2 危急', get: r => r.h.t2wt },
+      { key: 't3', label: 'T3 緊急', get: r => r.h.t3p50 },
+      { key: 't45', label: 'T4/5 非緊急', get: r => r.h.t45p50 }
+    ];
+    let tbl = `<table class="compare-table"><tr><th></th>${headers}</tr>`;
+    tiers.forEach(t => {
+      tbl += `<tr class="trhead"><td>${t.label}</td>${rows.map(r => '<td></td>').join('')}</tr>`;
+      // 中位數 + 75th
+      const med = rows.map(r => {
+        const mins = parseMins(t.get(r));
+        const cls = colorClassFor(mins);
+        return `<td class="${cls}">${fmtApiTime(t.get(r))}</td>`;
+      }).join('');
+      tbl += `<tr><td class="hosp-name">　↳ 中位</td>${med}</tr>`;
+    });
+    tbl += `<tr><td class="hosp-name" style="padding-top:10px;font-weight:700;">趨勢 (T3 中位, 過去數小時)</td>${rows.map((r, i) => {
+      const cid = `cmp-trend-${i}`;
+      setTimeout(() => renderSparkline(document.getElementById(cid), r.h._hosp.code, 't3', '#c62828'), 0);
+      return `<td><canvas id="${cid}" class="sparkline" width="120" height="36"></canvas></td>`;
+    }).join('')}</tr>`;
+    tbl += '</table>';
+    tbl += `<div style="font-size:0.62rem;color:#bbb;margin-top:8px;">📈 趨勢為本機累積的歷史數據，非官方來源；開始使用後約每4分鐘記錄一次。</div>`;
+    body.innerHTML = tbl;
+    overlay.classList.add('show');
+  }
+  function closeCompare() { document.getElementById('compare-modal-overlay').classList.remove('show'); }
+  function toggleCompare(code, name, btn) {
+    if (compareSet.has(code)) { compareSet.delete(code); btn.classList.remove('added'); }
+    else {
+      if (compareSet.size >= 6) { showSnackbar('最多對比 6 間醫院', true); return; }
+      compareSet.add(code); btn.classList.add('added');
+    }
+    persistCompare();
+    const bar = document.getElementById('compare-bar');
+    const cnt = document.getElementById('compare-count');
+    cnt.textContent = compareSet.size;
+    bar.classList.toggle('show', compareSet.size > 0);
+  }
+  function colorClassFor(mins) {
+    if (mins === null || mins === 99999 || mins === 88888) return 'c-gray';
+    if (mins <= 5) return 'c-green';
+    if (mins <= 15) return 'c-yellow';
+    if (mins <= 60) return 'c-orange';
+    return 'c-red';
+  }
+
   /* ── Init ─────────────────────────────────────── */
   initMap();
   fetchData();
@@ -865,6 +1159,38 @@
 
   // Panel toggle button
   document.getElementById('panel-toggle').addEventListener('click', togglePanel);
+
+  /* ── 高峰時段提示 ───────────────────────────── */
+  updatePeakHint();
+  setInterval(updatePeakHint, 60000);
+
+  /* ── 對比 bar / modal ───────────────────────── */
+  const cmpBar = document.getElementById('compare-bar');
+  cmpBar.addEventListener('click', openCompare);
+  document.getElementById('compare-close').addEventListener('click', closeCompare);
+  document.getElementById('compare-modal-overlay').addEventListener('click', e => {
+    if (e.target.id === 'compare-modal-overlay') closeCompare();
+  });
+  // 初始化對比 bar 狀態
+  document.getElementById('compare-count').textContent = compareSet.size;
+  cmpBar.classList.toggle('show', compareSet.size > 0);
+
+  /* ── 離線偵測 ───────────────────────────────── */
+  function updateOffline() {
+    document.getElementById('offline-banner').classList.toggle('show', !navigator.onLine);
+  }
+  window.addEventListener('online', updateOffline);
+  window.addEventListener('offline', updateOffline);
+  updateOffline();
+
+  /* ── PWA: Service Worker ─────────────────────── */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').then(reg => {
+        console.log('SW registered', reg.scope);
+      }).catch(err => console.warn('SW register failed', err));
+    });
+  }
 </script>
 </body>
 </html>
