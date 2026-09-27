@@ -314,6 +314,28 @@
     }
     #peak-hint.show { display: block; }
 
+    /* ── Recommendation banner（最啱去邊間）────────── */
+    #rec-banner {
+      position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
+      background: #e8f5e9; border: 2px solid #43a047; color: #1b5e20;
+      padding: 8px 16px; border-radius: 20px; z-index: 997;
+      font-size: 0.8rem; font-weight: 700; box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+      display: none; white-space: nowrap; max-width: 94%; overflow: hidden; text-overflow: ellipsis;
+      cursor: pointer;
+    }
+    #rec-banner.show { display: block; }
+    #rec-banner:hover { background: #c8e6c9; }
+    #rec-banner .rec-sub { font-weight: 400; font-size: 0.7rem; color: #2e7d32; }
+
+    /* ── 非緊急大字（popup / list 強調）────────────── */
+    .popup-big {
+      margin: 8px 0 10px; padding: 10px 12px; border-radius: 10px;
+      background: #f3e5f5; border-left: 4px solid #9c27b0;
+    }
+    .popup-big .big-label { font-size: 0.72rem; color: #6a1b9a; font-weight: 600; }
+    .popup-big .big-time { font-size: 1.5rem; font-weight: 800; color: #4a148c; }
+    .popup-big .big-sub { font-size: 0.68rem; color: #8e24aa; }
+
     /* ── Offline banner ─────────────────────────── */
     #offline-banner {
       position: absolute; top: 44px; left: 50%; transform: translateX(-50%);
@@ -447,6 +469,7 @@
 <div id="snackbar"></div>
 
 <div id="peak-hint"></div>
+<div id="rec-banner"></div>
 <div id="offline-banner">📴 離線模式 — 顯示上次數據</div>
 <button id="compare-bar" class="hidden">⚖️ 對比醫院 <span id="compare-count"></span> →</button>
 
@@ -661,6 +684,7 @@
             <span class="hosp-row-badge ${isImminent ? 'badge-imminent' : ''}" style="background:${badgeColor}">${badgeText}</span>
             <button class="hosp-compare-btn${compareSet.has(hosp.code) ? ' added' : ''}" data-code="${hosp.code}" data-name="${hosp.name_tc}" title="加入對比">+</button>
           </div>
+          ${t45mins != null && t45mins !== 99999 && t45mins !== 88888 ? `<div class="hosp-row-t45big" style="font-size:0.72rem;font-weight:700;color:#6a1b9a;">🕑 非緊急 <span style="font-size:0.9rem;">${fmtMins(t45mins)}</span></div>` : ''}
           ${distStr ? `<div class="hosp-row-dist">📍 ${distStr}</div>` : ''}
           <div class="hosp-row-times">
             <span class="hosp-time-chip"><span class="t1-label">T1</span> <span>${fmtApiTime(t1)}</span></span>
@@ -800,6 +824,12 @@
       <div data-code="${hosp.code}">
         <div class="popup-header">${hosp.name_tc}</div>
         <div class="popup-sub">${hosp.name_en}</div>
+        ${t45mins != null && t45mins !== 99999 && t45mins !== 88888 ? `
+        <div class="popup-big">
+          <div class="big-label">🕑 非緊急病人輪候（T4/5）</div>
+          <div class="big-time">${fmtMins(t45mins)}</div>
+          <div class="big-sub">${t45color === 'red' ? '⚠️ 等候較長' : t45color === 'orange' ? '等候偏長' : t45color === 'yellow' ? '等候中等' : '等候較短'}</div>
+        </div>` : ''}
         <table class="popup-table">
           <tr><th colspan="2">病人類別</th><th>最長輪候</th></tr>
           <tr>
@@ -927,6 +957,7 @@
       });
 
       renderHospitalList();
+      updateRecBanner();
       document.getElementById('loading').classList.add('hide');
       if (dataStale) {
         dataStale = false;
@@ -1078,20 +1109,95 @@
     ctx.beginPath(); ctx.arc(lx, ly, 2.5, 0, Math.PI * 2); ctx.fill();
   }
 
-  // 高峰時段提示
+  // 智能高峰時段提示（用歷史數據比較近期趨勢）
   function updatePeakHint() {
     const el = document.getElementById('peak-hint');
     const d = new Date();
     const h = d.getHours();
     const day = d.getDay(); // 0=Sun
     const isWeekend = day === 0 || day === 6;
+
+    // 用 waitHistory 比較「近1小時」vs「前2-3小時」趨勢（升=繁忙, 跌=空閒）
+    const now = Date.now();
+    const recent1h = waitHistory.filter(e => now - e.ts < 60 * 60 * 1000);   // 近1小時
+    const prev2h = waitHistory.filter(e => now - e.ts >= 60 * 60 * 1000 && now - e.ts < 3 * 3600 * 1000); // 1-3小時前
     let msg = '';
-    if (h >= 18 && h < 23) msg = '🌙 晚間高峰時段 — 非緊急輪候或較長';
-    else if (isWeekend && h >= 9 && h < 22) msg = '📅 週末門診休診 — 急症室較繁忙';
-    else if (h >= 0 && h < 6) msg = '🌌 深宵時段 — 深夜就診人數較少';
-    else if (h >= 11 && h < 14) msg = '🍱 午間時段 — 非緊急候診或有上升';
+    if (recent1h.length >= 1 && prev2h.length >= 2) {
+      const avgNow = avgOf(recent1h, 't45');
+      const avgPrev = avgOf(prev2h, 't45');
+      if (avgNow != null && avgPrev != null && avgPrev > 0) {
+        const ratio = avgNow / avgPrev;
+        if (ratio > 1.25) msg = `🔺 非緊急輪候正在上升 — 依家約 ${fmtMins(avgNow)}（前2小時約 ${fmtMins(avgPrev)}）`;
+        else if (ratio < 0.8) msg = `🔻 非緊急輪候正在回落 — 依家約 ${fmtMins(avgNow)}（前2小時約 ${fmtMins(avgPrev)}）`;
+      }
+    }
+    if (!msg) {
+      // Fallback 固定時段規則
+      if (h >= 18 && h < 23) msg = '🌙 晚間高峰時段 — 非緊急輪候或較長';
+      else if (isWeekend && h >= 9 && h < 22) msg = '📅 週末門診休診 — 急症室較繁忙';
+      else if (h >= 0 && h < 6) msg = '🌌 深宵時段 — 深夜就診人數較少';
+      else if (h >= 11 && h < 14) msg = '🍱 午間時段 — 非緊急候診或有上升';
+    }
     el.className = msg ? 'show' : '';
     el.textContent = msg;
+  }
+  // 求某分流嘅全港平均（分鐘）
+  function avgOf(arr, tier) {
+    const vals = [];
+    for (const e of arr) {
+      for (const code in e.d) {
+        const v = e.d[code] && e.d[code][tier];
+        if (v != null && v !== 99999 && v !== 88888 && v > 0) vals.push(v);
+      }
+    }
+    if (!vals.length) return null;
+    return Math.round(vals.reduce((a,b)=>a+b,0) / vals.length);
+  }
+  function fmtMins(m) {
+    if (m == null) return 'N/A';
+    return m < 60 ? `${m}分` : `${(m/60).toFixed(1)}小時`;
+  }
+
+  /* ── 一鍵推薦「最啱去邊間」 ───────────────────── */
+  function computeBestHospital() {
+    if (!waitTimeData.length) return null;
+    // 歷史同分流平均（作 baseline 加權，比較邊間相對最空閒）
+    const hAvg = avgOf(waitHistory, 't45'); // 全港非緊急平均
+    let best = null, bestScore = Infinity;
+    for (const { h } of waitTimeData) {
+      const hosp = h._hosp;
+      const t45 = parseMins(h.t45p50);
+      const t3 = parseMins(h.t3p50);
+      if (t45 == null || t45 === 99999 || t45 === 88888) continue; // 冇非緊急數據就 skip
+      // 距離（有定位先用）
+      let distKm = null;
+      if (userLatLng) {
+        distKm = calcDistance(hosp.lat, hosp.lon, userLatLng.lat, userLatLng.lng);
+      }
+      // 綜合建議分：非緊急輪候為主（權重0.6）+ 緊急T3（權重0.3）+ 距離（權重0.1）
+      // 愈低愈好
+      const base = (hAvg && hAvg > 0) ? hAvg : 60;
+      const waitScore = (t45 / base) * 0.6 + (t3 != null && t3 < 99999 ? (t3 / base) * 0.3 : 0.3);
+      const distScore = distKm != null ? (distKm / 10) * 0.1 : 0.1; // 10km 當滿分距離權重
+      const score = waitScore + distScore;
+      if (score < bestScore) { bestScore = score; best = { hosp, t45, t3, distKm, score }; }
+    }
+    return best;
+  }
+
+  function updateRecBanner() {
+    const el = document.getElementById('rec-banner');
+    const best = computeBestHospital();
+    if (!best) { el.className = ''; return; }
+    const distStr = best.distKm != null
+      ? (best.distKm < 1 ? `距你 ${Math.round(best.distKm*1000)}m` : `距你 ${best.distKm.toFixed(1)}km`)
+      : '';
+    el.innerHTML = `✅ 建議去 <b>${best.hosp.name_tc}</b> — 非緊急約 <b>${fmtMins(best.t45)}</b>${distStr ? ' · ' + distStr : ''}`;
+    el.className = 'show';
+    el.onclick = () => {
+      const m = markers[best.hosp.code];
+      if (m) { map.flyTo(m.getLatLng(), 15, { animate: true, duration: 0.8 }); setTimeout(() => m.openPopup(), 400); }
+    };
   }
 
   // 對比: 開啟/關閉 modal
@@ -1163,6 +1269,7 @@
   /* ── 高峰時段提示 ───────────────────────────── */
   updatePeakHint();
   setInterval(updatePeakHint, 60000);
+  updateRecBanner();
 
   /* ── 對比 bar / modal ───────────────────────── */
   const cmpBar = document.getElementById('compare-bar');
