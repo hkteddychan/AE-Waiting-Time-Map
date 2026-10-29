@@ -678,7 +678,7 @@
         : '';
 
       return `
-        <div class="hosp-row${isActive ? ' active' : ''}" data-code="${hosp.code}">
+        <div class="hosp-row${isActive ? ' active' : ''}" data-code="${hosp.code}" tabindex="0" role="button" aria-label="${hosp.name_tc}，非緊急輪候 ${fmtApiTime(t45mins != null ? t45mins + '' : '無數據')}，按 Enter 查看詳情">
           <div class="hosp-row-top">
             <span class="hosp-row-name">${hosp.name_tc}</span>
             <span class="hosp-row-badge ${isImminent ? 'badge-imminent' : ''}" style="background:${badgeColor}">${badgeText}</span>
@@ -697,7 +697,7 @@
 
     // Row click → fly to marker
     list.querySelectorAll('.hosp-row').forEach(row => {
-      row.addEventListener('click', e => {
+      const activateRow = () => {
         const code = row.dataset.code;
         const m = markers[code];
         if (!m) return;
@@ -706,6 +706,11 @@
         activeCode = code;
         document.querySelectorAll('.hosp-row').forEach(r => r.classList.remove('active'));
         row.classList.add('active');
+      };
+      row.addEventListener('click', activateRow);
+      // FIX (P0-2): 鍵盤可達 — Enter/Space 觸發，同 click 一樣
+      row.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activateRow(); }
       });
     });
 
@@ -933,6 +938,11 @@
       const haJson = await haResp.json();
       const hospJson = await hospResp.json();
 
+      // FIX (F-15): SW 離線 fallback 回 503/空陣列 — 唔好清空已有數據
+      if (haResp.status === 503 || haJson.offline) {
+        throw new Error('OFFLINE_FALLBACK');
+      }
+
       // Build lookup
       hospMap = {};
       hospJson.forEach(h => {
@@ -1066,7 +1076,7 @@
     data.forEach(h => {
       const hosp = h._hosp || (h.h && h.h._hosp);
       if (!hosp) return;
-      snap.d[hosp.code] = { t1: parseMins(h.t1wt), t2: parseMins(h.t2wt), t3: parseMins(h.t3p50), t45: parseMins(h.t45p50) };
+      snap.d[hosp.code] = { t1: parseMins(h.h ? h.h.t1wt : h.t1wt), t2: parseMins(h.h ? h.h.t2wt : h.t2wt), t3: parseMins(h.h ? h.h.t3p50 : h.t3p50), t45: parseMins(h.h ? h.h.t45p50 : h.t45p50) };
     });
     waitHistory.push(snap);
     if (waitHistory.length > HISTORY_MAX_ENTRIES) waitHistory = waitHistory.slice(-HISTORY_MAX_ENTRIES);
@@ -1183,6 +1193,11 @@
       if (userLatLng) {
         distKm = calcDistance(hosp.lat, hosp.lon, userLatLng.lat, userLatLng.lng);
       }
+      // FIX (F-26): "0 hour" 係關閉/無數據（例如長洲醫院），唔係「零輪候」。
+      // 有定位時：距離 >5km 而 t45=0 視為無效數據,skip（唔好推薦用家跨海去離島）
+      if (t45 === 0 && distKm != null && distKm > 5) continue;
+      // 無定位時 0 hour 一律 skip（冇辦法核實係咪真開放）
+      if (t45 === 0 && distKm == null) continue;
       // 綜合建議分：非緊急輪候為主（權重0.6）+ 緊急T3（權重0.3）+ 距離（權重0.1）
       // 愈低愈好
       const base = (hAvg && hAvg > 0) ? hAvg : 60;
