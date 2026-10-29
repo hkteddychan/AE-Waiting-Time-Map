@@ -804,6 +804,13 @@
     const t3p95 = h.t3p95 || 'N/A';
     const t45p50 = h.t45p50 || 'N/A';
     const t45p95 = h.t45p95 || 'N/A';
+    // resuscitation-in-progress flags (HA field: manageT1case/manageT2case = 'Y')
+    const t1Manage = h.manageT1case === 'Y';
+    const t2Manage = h.manageT2case === 'Y';
+    const manageBanner = (t1Manage || t2Manage) ? `
+        <div class="popup-manage" style="background:#7b1c1c;color:#fff;padding:6px 10px;border-radius:8px;margin-bottom:6px;font-size:13px;">
+          ⚠️ 該院正處理${t1Manage ? '危殆' : ''}${t1Manage && t2Manage ? '及' : ''}${t2Manage ? '危急' : ''}個案，實際輪候可能更長
+        </div>` : '';
     const t1mins = parseMins(t1);
     const t2mins = parseMins(t2);
     const t3mins = parseMins(t3p50);
@@ -824,6 +831,7 @@
       <div data-code="${hosp.code}">
         <div class="popup-header">${hosp.name_tc}</div>
         <div class="popup-sub">${hosp.name_en}</div>
+        ${manageBanner}
         ${t45mins != null && t45mins !== 99999 && t45mins !== 88888 ? `
         <div class="popup-big">
           <div class="big-label">🕑 非緊急病人輪候（T4/5）</div>
@@ -853,7 +861,7 @@
             <td class="time-col ${t45color}">${fmtApiTime(t45p50)}</td>
           </tr>
         </table>
-        <div class="popup-extra">📊 T3 75th: ${fmtApiTime(t3p95)} | T4/5 75th: ${fmtApiTime(t45p95)}</div>
+        <div class="popup-extra">📊 T3 95th: ${fmtApiTime(t3p95)} | T4/5 95th: ${fmtApiTime(t45p95)}</div>
         <div class="popup-actions">
           <a class="popup-link" href="${hosp.link_tc}" target="_blank" rel="noopener">HA 官網</a>
           <a class="popup-nav" href="${navUrl}" target="_blank" rel="noopener">📍 導航</a>
@@ -968,6 +976,7 @@
     } catch (err) {
       console.warn('Fetch error:', err.message);
       dataStale = true;
+      document.getElementById('loading').classList.add('hide');
       if (waitTimeData.length === 0) {
         showSnackbar('⚠️ 無法獲取數據，請檢查網絡', true);
       } else {
@@ -1218,7 +1227,7 @@
     let tbl = `<table class="compare-table"><tr><th></th>${headers}</tr>`;
     tiers.forEach(t => {
       tbl += `<tr class="trhead"><td>${t.label}</td>${rows.map(r => '<td></td>').join('')}</tr>`;
-      // 中位數 + 75th
+      // 中位數 + 95th
       const med = rows.map(r => {
         const mins = parseMins(t.get(r));
         const cls = colorClassFor(mins);
