@@ -2,8 +2,9 @@ name: Update AE Waiting Data
 
 on:
   schedule:
-    # Every 15 min — HA open-data AE waiting time snapshots (rolling 24h history)
-    - cron: '*/15 * * * *'
+    # Hourly at :23 — offset past GitHub's on-the-hour scheduler peak (*/15 ticks got
+    # skipped 3.5-6.5h at a time; see incident 2026-10-31). HA open-data AE snapshots.
+    - cron: '23 * * * *'
   workflow_dispatch:
 
 permissions:
